@@ -178,6 +178,7 @@ export async function initDatabase() {
       store_id INTEGER NOT NULL,
       year_month TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'DRAFT',
+      snapshot_rates TEXT,
       total_gross_pay INTEGER DEFAULT 0,
       total_deductions INTEGER DEFAULT 0,
       total_net_pay INTEGER DEFAULT 0,
@@ -310,6 +311,10 @@ export async function initDatabase() {
     if (!pNames.includes('biz_account_pay')) await exec("ALTER TABLE payroll_details ADD COLUMN biz_account_pay INTEGER DEFAULT 0;");
     if (!pNames.includes('personal_account_pay')) await exec("ALTER TABLE payroll_details ADD COLUMN personal_account_pay INTEGER DEFAULT 0;");
     if (!pNames.includes('comparison_data')) await exec("ALTER TABLE payroll_details ADD COLUMN comparison_data TEXT;");
+
+    const runCols = await query("PRAGMA table_info(payroll_runs)");
+    const rNames = runCols.map(c => c.name);
+    if (!rNames.includes('snapshot_rates')) await exec("ALTER TABLE payroll_runs ADD COLUMN snapshot_rates TEXT;");
   } catch (e) {}
 
   console.log('✅ SQLite Database schema initialized successfully.');
