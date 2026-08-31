@@ -36,8 +36,8 @@ async function ensureDatabaseReady() {
       try {
         await db.initDatabase();
         await initHolidays();
-        const usersCount = await db.get('SELECT COUNT(*) as count FROM users');
-        if (!usersCount || usersCount.count === 0) {
+        const storesCount = await db.get('SELECT COUNT(*) as count FROM stores');
+        if (!storesCount || storesCount.count === 0) {
           console.log('🔄 Initializing database with default seeds...');
           await runSeeds();
         }
