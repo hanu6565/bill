@@ -559,11 +559,55 @@ button.nav-link.active,
   border-color: #dc2626 !important;
 }
 
+/* Wage Ledger Document Paper Styling */
+.wage-ledger-document,
+.wage-ledger-document *,
+.wage-ledger-table,
+.wage-ledger-table *,
+.wage-ledger-table th,
+.wage-ledger-table td,
+.wage-ledger-table span {
+  color: #000000 !important;
+  box-sizing: border-box;
+}
+
+.wage-ledger-document {
+  background: #ffffff !important;
+  color: #000000 !important;
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.wage-ledger-table {
+  width: 100%;
+  border-collapse: collapse !important;
+  background-color: #ffffff !important;
+  border: 1.5px solid #000000 !important;
+}
+
+.wage-ledger-table th {
+  background-color: #fef9c3 !important;
+  color: #000000 !important;
+  border: 1px solid #000000 !important;
+  font-weight: 700 !important;
+}
+
+.wage-ledger-table tr.group-header th {
+  background-color: #fef3c7 !important;
+}
+
+.wage-ledger-table td {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #000000 !important;
+  font-size: 11px !important;
+}
+
 /* Print Styles */
 @media print {
   @page {
     size: A4 landscape;
-    margin: 8mm;
+    margin: 6mm;
   }
   body {
     background: #ffffff !important;
@@ -581,6 +625,7 @@ button.nav-link.active,
     box-shadow: none !important;
     padding: 0 !important;
     max-width: 100% !important;
+    border: none !important;
     page-break-after: always;
   }
   .wage-ledger-table {
@@ -591,11 +636,6 @@ button.nav-link.active,
     border: 1px solid #000 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-  }
-  .payslip-paper {
-    box-shadow: none !important;
-    padding: 0 !important;
-    max-width: 100% !important;
   }
 }
 
