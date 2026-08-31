@@ -62,10 +62,15 @@ export default function WageLedgerView({ stores, currentStoreId }) {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Inline Scoped Styles to override all dark mode styles and ensure 100% visible black text */}
       <style>{`
-        #root .wage-ledger-wrapper,
+        #root .main-content {
+          max-width: 1600px !important;
+          width: 100% !important;
+          padding: 16px 12px !important;
+        }
+
         #root .wage-ledger-document,
         #root .wage-ledger-document *,
         #root .wage-ledger-document table,
@@ -86,10 +91,15 @@ export default function WageLedgerView({ stores, currentStoreId }) {
           background-color: #ffffff !important;
           border: 1px solid #94a3b8 !important;
           box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4) !important;
+          border-radius: 8px !important;
+          padding: 20px 12px !important;
+          overflow-x: auto !important;
+          width: 100% !important;
         }
 
         #root .wage-ledger-table {
           width: 100% !important;
+          min-width: 1120px !important;
           border-collapse: collapse !important;
           background-color: #ffffff !important;
           border: 1.5px solid #000000 !important;
@@ -103,12 +113,14 @@ export default function WageLedgerView({ stores, currentStoreId }) {
           font-weight: 700 !important;
           text-align: center !important;
           vertical-align: middle !important;
-          padding: 3px 2px !important;
+          padding: 3px 1px !important;
+          font-size: 10px !important;
         }
 
         #root .wage-ledger-table tr.group-header th {
           background-color: #fef3c7 !important;
-          padding: 5px 4px !important;
+          padding: 4px 2px !important;
+          font-size: 11px !important;
         }
 
         #root .wage-ledger-table td {
@@ -116,14 +128,14 @@ export default function WageLedgerView({ stores, currentStoreId }) {
           color: #000000 !important;
           border: 1px solid #000000 !important;
           vertical-align: middle !important;
-          font-size: 11px !important;
+          font-size: 10.5px !important;
           height: 22px !important;
-          padding: 2px 3px !important;
+          padding: 2px 2px !important;
         }
 
         #root .wage-ledger-table td.num {
           text-align: right !important;
-          padding-right: 4px !important;
+          padding-right: 3px !important;
           font-variant-numeric: tabular-nums !important;
         }
 
@@ -195,55 +207,53 @@ export default function WageLedgerView({ stores, currentStoreId }) {
         </div>
       ) : (
         ledgerData.map(({ store, run, details }) => {
+          // Exclude any legacy foreign test worker records
+          const activeDetails = (details || []).filter(d => 
+            d.employee_name &&
+            !d.employee_name.toUpperCase().includes('DUC') && 
+            !d.employee_name.toUpperCase().includes('HUY') && 
+            !d.employee_name.toUpperCase().includes('VC')
+          );
+
           // Fill up to minimum 17 rows to match standard printed template form
-          const displayRowsCount = Math.max(17, details.length);
-          const blankRowsCount = displayRowsCount - details.length;
+          const displayRowsCount = Math.max(17, activeDetails.length);
+          const blankRowsCount = displayRowsCount - activeDetails.length;
 
           return (
-            <div 
-              key={store.id} 
-              className="wage-ledger-document"
-              style={{
-                background: '#ffffff',
-                color: '#000000',
-                padding: '24px 18px',
-                borderRadius: '8px',
-                overflowX: 'auto'
-              }}
-            >
+            <div key={store.id} className="wage-ledger-document">
               {/* Document Header Title (Centered, Large Bold) */}
-              <div style={{ textAlign: 'center', marginBottom: '14px' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: '800', letterSpacing: '-0.02em', color: '#000000', margin: 0 }}>
+              <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+                <h2 style={{ fontSize: '19px', fontWeight: '800', letterSpacing: '-0.02em', color: '#000000', margin: 0 }}>
                   {store.name || '신영웅청국장해물뚝배기성서모다아울렛점'}
                 </h2>
               </div>
 
               {/* Exact Standard 2-Row Wage Ledger Table */}
               <table className="wage-ledger-table">
-                {/* 22 Column Width Definitions */}
+                {/* 22 Column Width Definitions (Proportionally fit across 100% width) */}
                 <colgroup>
-                  <col style={{ width: '28px' }} />  {/* 연번 */}
-                  <col style={{ width: '55px' }} />  {/* 성명 */}
-                  <col style={{ width: '95px' }} />  {/* 주민등록번호 */}
-                  <col style={{ width: '70px' }} />  {/* 입사일 */}
-                  <col style={{ width: '55px' }} />  {/* 퇴사일 */}
-                  <col style={{ width: '45px' }} />  {/* 부양가족 수 */}
-                  <col style={{ width: '75px' }} />  {/* 기본급 */}
-                  <col style={{ width: '58px' }} />  {/* 연장/야간 */}
-                  <col style={{ width: '58px' }} />  {/* 휴일/상여 */}
-                  <col style={{ width: '65px' }} />  {/* 대체/특근 */}
-                  <col style={{ width: '58px' }} />  {/* 만근/공휴 */}
-                  <col style={{ width: '55px' }} />  {/* 연차 */}
-                  <col style={{ width: '60px' }} />  {/* 운전보조 */}
-                  <col style={{ width: '75px' }} />  {/* 지급액 계 */}
-                  <col style={{ width: '75px' }} />  {/* 과세소득 */}
-                  <col style={{ width: '58px' }} />  {/* 국민/지방 */}
-                  <col style={{ width: '58px' }} />  {/* 건강/수습 */}
-                  <col style={{ width: '60px' }} />  {/* 장기/갑근 */}
-                  <col style={{ width: '58px' }} />  {/* 고용/지방 */}
-                  <col style={{ width: '55px' }} />  {/* 소득/근태 */}
-                  <col style={{ width: '65px' }} />  {/* 공제액 계 */}
-                  <col style={{ width: '75px' }} />  {/* 차인지급액 */}
+                  <col style={{ width: '2.5%' }} />  {/* 연번 */}
+                  <col style={{ width: '4.5%' }} />  {/* 성명 */}
+                  <col style={{ width: '7.5%' }} />  {/* 주민등록번호 */}
+                  <col style={{ width: '5.8%' }} />  {/* 입사일 */}
+                  <col style={{ width: '4.0%' }} />  {/* 퇴사일 */}
+                  <col style={{ width: '3.0%' }} />  {/* 부양가족 수 */}
+                  <col style={{ width: '6.0%' }} />  {/* 기본급 */}
+                  <col style={{ width: '4.8%' }} />  {/* 연장/야간 */}
+                  <col style={{ width: '4.8%' }} />  {/* 휴일/상여 */}
+                  <col style={{ width: '5.0%' }} />  {/* 대체/특근 */}
+                  <col style={{ width: '4.8%' }} />  {/* 만근/공휴 */}
+                  <col style={{ width: '4.2%' }} />  {/* 연차 */}
+                  <col style={{ width: '4.8%' }} />  {/* 운전보조 */}
+                  <col style={{ width: '6.2%' }} />  {/* 지급액 계 */}
+                  <col style={{ width: '6.2%' }} />  {/* 과세소득 */}
+                  <col style={{ width: '4.5%' }} />  {/* 국민/지방 */}
+                  <col style={{ width: '4.5%' }} />  {/* 건강/수습 */}
+                  <col style={{ width: '4.8%' }} />  {/* 장기/갑근 */}
+                  <col style={{ width: '4.5%' }} />  {/* 고용/지방 */}
+                  <col style={{ width: '4.2%' }} />  {/* 소득/근태 */}
+                  <col style={{ width: '5.8%' }} />  {/* 공제액 계 */}
+                  <col style={{ width: '6.6%' }} />  {/* 차인지급액 */}
                 </colgroup>
 
                 <thead>
@@ -256,7 +266,7 @@ export default function WageLedgerView({ stores, currentStoreId }) {
                   </tr>
 
                   {/* Sub Header - Row 1 (Upper Items) */}
-                  <tr style={{ fontSize: '10.5px' }}>
+                  <tr>
                     <th rowSpan="2">연번</th>
                     <th rowSpan="2">성명</th>
                     <th rowSpan="2">주민등록번호</th>
@@ -283,7 +293,7 @@ export default function WageLedgerView({ stores, currentStoreId }) {
                   </tr>
 
                   {/* Sub Header - Row 2 (Lower Items) */}
-                  <tr style={{ fontSize: '10.5px' }}>
+                  <tr>
                     <th>야간수당</th>
                     <th>상여금</th>
                     <th>특근수당</th>
@@ -298,7 +308,7 @@ export default function WageLedgerView({ stores, currentStoreId }) {
                 </thead>
 
                 <tbody>
-                  {details.map((item, idx) => {
+                  {activeDetails.map((item, idx) => {
                     let calcBreakdown = {};
                     try {
                       calcBreakdown = typeof item.calculation_breakdown === 'string' 
@@ -360,7 +370,7 @@ export default function WageLedgerView({ stores, currentStoreId }) {
                         <tr>
                           <td rowSpan="2" className="center">{idx + 1}</td>
                           <td rowSpan="2" className="center bold">{item.employee_name}</td>
-                          <td rowSpan="2" className="center" style={{ fontFamily: 'monospace', fontSize: '9.5px' }}>{rrnDisplay}</td>
+                          <td rowSpan="2" className="center" style={{ fontFamily: 'monospace', fontSize: '9px' }}>{rrnDisplay}</td>
                           <td rowSpan="2" className="center">{item.hire_date}</td>
                           <td rowSpan="2" className="center">{item.resign_date || '-'}</td>
                           <td rowSpan="2" className="center">{item.dependents_count !== undefined ? item.dependents_count : 1}</td>
@@ -386,7 +396,7 @@ export default function WageLedgerView({ stores, currentStoreId }) {
                           <td className="num">{formatVal(incTax)}</td>
                           
                           <td rowSpan="2" className="num bold">{formatVal(totalDeduct)}</td>
-                          <td rowSpan="2" className="num bold">{formatVal(netPay)}</td>
+                          <td rowSpan="2" className="num bold" style={{ background: '#fefce8' }}>{formatVal(netPay)}</td>
                         </tr>
 
                         {/* Lower Line (Row 2) */}
@@ -410,7 +420,7 @@ export default function WageLedgerView({ stores, currentStoreId }) {
 
                   {/* Empty Template Rows (up to 17 rows) */}
                   {Array.from({ length: blankRowsCount }).map((_, bIdx) => {
-                    const rowNo = details.length + bIdx + 1;
+                    const rowNo = activeDetails.length + bIdx + 1;
                     return (
                       <React.Fragment key={`blank-${bIdx}`}>
                         <tr>
@@ -460,7 +470,7 @@ export default function WageLedgerView({ stores, currentStoreId }) {
               </table>
 
               {/* Bottom Pagination Footer */}
-              <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '11px', color: '#000000', fontWeight: '600' }}>
+              <div style={{ textAlign: 'center', marginTop: '14px', fontSize: '11px', color: '#000000', fontWeight: '600' }}>
                 페이지 1
               </div>
             </div>
