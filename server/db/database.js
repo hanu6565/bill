@@ -235,6 +235,16 @@ export async function initDatabase() {
       UNIQUE(payroll_run_id, employee_id)
     );
 
+    CREATE TABLE IF NOT EXISTS public_holidays (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      holiday_date DATE NOT NULL UNIQUE,
+      holiday_name TEXT NOT NULL,
+      is_substitute INTEGER DEFAULT 0,
+      is_manual INTEGER DEFAULT 0,
+      year INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS statutory_holidays (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       holiday_date DATE NOT NULL UNIQUE,
