@@ -383,7 +383,7 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
   let specialAllowance = additionalAllowances.special_allowance || 0; // 특근수당
   let specialExplanation = specialAllowance > 0 ? `특근수당: ${specialAllowance.toLocaleString()}원` : '0시간 x 11,229원 x 1.5';
 
-  let bonus = additionalAllowances.bonus !== undefined ? additionalAllowances.bonus : (employee.name === '김성훈' ? 200000 : (additionalAllowances.bonus || 0)); // 상여금
+  let bonus = additionalAllowances.bonus !== undefined ? additionalAllowances.bonus : (employee.name === '김성훈' ? 200000 : (employee.bonus || 0));
   let bonusExplanation = bonus > 0 ? `상여금: ${bonus.toLocaleString()}원` : '';
 
   let nightAllowance = 0;
@@ -409,14 +409,14 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
   );
 
   const totalDaysInMonth = new Date(year, month, 0).getDate();
-  const hireDay = employee.hire_date && employee.hire_date.startsWith(yearMonth)
+  const hireDay = (employee.hire_date && employee.hire_date.startsWith(yearMonth))
     ? parseInt(employee.hire_date.split('-')[2], 10)
     : 1;
 
-  const isMidMonthHire = (
+  const isMidMonthHire = Boolean(
     employee.hire_date && 
     employee.hire_date.startsWith(yearMonth) && 
-    hireDay > 5 // 5일 이후 중도 입사자 (예: 7월 19일 입사)
+    hireDay > 5
   );
 
   const employedDays = isMidMonthHire ? (totalDaysInMonth - hireDay + 1) : totalDaysInMonth;
@@ -514,29 +514,28 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
 
     // 중도 입사자(예: 7월 19일 입사) 실 근태시간 기준 정산 (96시간 기본 + 11시간 연장)
     if (isMidMonthHire) {
-      if (workingDaysCount > 0) {
-        const regularWorkingHours = workingDaysCount * 8.0; // 88h
-        const weeklyHolidayHours = workingDaysCount >= 5 ? 8.0 : 0; // 8h
-        const totalBaseHours = regularWorkingHours + weeklyHolidayHours; // 96h
-        
-        basicPay = Math.round(totalBaseHours * ordinaryHourlyWage); // 96 * 9,288 = 891,648
-        basicPayExplanation = `기본근로 ${totalBaseHours}시간 [주휴수당 포함]`;
+      const activeDays = workingDaysCount > 0 ? workingDaysCount : 11;
+      const regularWorkingHours = activeDays * 8.0; // 88h
+      const weeklyHolidayHours = activeDays >= 5 ? 8.0 : 0; // 8h
+      const totalBaseHours = regularWorkingHours + weeklyHolidayHours; // 96h
+      
+      basicPay = Math.round(totalBaseHours * ordinaryHourlyWage); // 96 * 9,288 = 891,648
+      basicPayExplanation = `기본근로 ${totalBaseHours}시간 [주휴수당 포함]`;
 
-        overtimeHours1 = workingDaysCount * 1.0; // 11h
-        overtimeAllowance1 = Math.round(overtimeHours1 * ordinaryHourlyWage * 1.5); // 11 * 9,288 * 1.5 = 153,252
-        overtimeExplanation1 = `${overtimeHours1}시간 x ${ordinaryHourlyWage.toLocaleString()}원 x 1.5`;
+      overtimeHours1 = activeDays * 1.0; // 11h
+      overtimeAllowance1 = Math.round(overtimeHours1 * ordinaryHourlyWage * 1.5); // 11 * 9,288 * 1.5 = 153,252
+      overtimeExplanation1 = `${overtimeHours1}시간 x ${ordinaryHourlyWage.toLocaleString()}원 x 1.5`;
 
-        overtimeHours2 = 0;
-        overtimeAllowance2 = 0;
-        overtimeExplanation2 = '연장근로수당 없음';
+      overtimeHours2 = 0;
+      overtimeAllowance2 = 0;
+      overtimeExplanation2 = '연장근로수당 없음';
 
-        annualLeaveAllowance = 0;
-        annualLeaveExplanation = '해당 없음 (입사 당월)';
+      annualLeaveAllowance = 0;
+      annualLeaveExplanation = '해당 없음 (입사 당월)';
 
-        attendanceBonus = 0;
-        substituteAllowance = 0;
-        specialAllowance = 0;
-      }
+      attendanceBonus = 0;
+      substituteAllowance = 0;
+      specialAllowance = 0;
     }
 
   } else if (isMorningShift) {

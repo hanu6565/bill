@@ -116,8 +116,9 @@ export async function runSeeds() {
 
       let isOff = false;
       if (emp.name === '김순자') {
-        // Off on Sundays + 2 Tuesdays
-        isOff = dayOfWeek === 0 || day === 7 || day === 21;
+        // Off on 4 Sundays + 2 Tuesdays (except 1~6th which are 6 full days)
+        const isFullDay = [1, 2, 3, 4, 5, 6].includes(day);
+        isOff = !isFullDay && (dayOfWeek === 0 || day === 7 || day === 21);
       } else if (emp.name === '차이수') {
         // Cha Yi-soo worked 11 days (19th ~ 31st) -> off on 2 days (22nd, 29th)
         isOff = day === 22 || day === 29;
@@ -158,7 +159,7 @@ export async function runSeeds() {
           [emp.id, emp.store_id, dateStr, null, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]
         );
       } else {
-        const hours = calculateDayHours(clockIn, clockOut, breakMins, dateStr, false);
+        const hours = await calculateDayHours(dateStr, clockIn, clockOut, breakMins, 0, 0, 0);
         await db.run(
           `INSERT OR REPLACE INTO attendance (
             employee_id, store_id, work_date, clock_in, clock_out, break_minutes,
@@ -167,7 +168,7 @@ export async function runSeeds() {
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             emp.id, emp.store_id, dateStr, clockIn, clockOut, breakMins,
-            hours.netWorkHours, hours.regularHours, hours.overtimeHours, hours.nightHours, hours.holidayHours, hours.publicHolidayHours,
+            hours.net_work_hours, hours.regular_hours, hours.overtime_hours, hours.night_hours, (hours.holiday_hours_under8 + hours.holiday_hours_over8), (hours.public_holiday_hours_under8 + hours.public_holiday_hours_over8),
             0, 0, 0, 0, 0
           ]
         );
