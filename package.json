@@ -1,0 +1,29 @@
+{
+  "name": "restaurant-payroll-app",
+  "version": "1.0.0",
+  "description": "요식업 다중 매장 급여 계산 및 급여명세서·임금대장 발급 웹애플리케이션",
+  "main": "server/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm --prefix client run dev\"",
+    "server": "node server/index.js",
+    "client": "npm --prefix client run dev",
+    "build": "npm --prefix client run build",
+    "test": "node --test server/tests/payrollEngine.test.js",
+    "seed": "node server/db/seeds.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "cross-env": "^7.0.3"
+  }
+}
