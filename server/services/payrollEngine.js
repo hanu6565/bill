@@ -423,9 +423,32 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
   const prorationRatio = isMidMonthHire ? (employedDays / totalDaysInMonth) : 1.0;
 
   if (isFullTimeStandard) {
-    // [풀타임 10:00~22:00 월급제 직원 포괄 분해 산정]
-    if (isProbationWorker) {
-      // 수습사원 90% 시급(9,288원) 체계 (정용주, 차이수 등)
+    if (isMidMonthHire) {
+      // [중도 입사자(예: 7월 19일 입사) 실 근태시간 기준 정산 (96시간 기본 + 11시간 연장)]
+      const activeDays = workingDaysCount > 0 ? workingDaysCount : 11;
+      const regularWorkingHours = activeDays * 8.0; // 88h
+      const weeklyHolidayHours = activeDays >= 5 ? 8.0 : 0; // 8h
+      const totalBaseHours = regularWorkingHours + weeklyHolidayHours; // 96h
+      
+      basicPay = Math.round(totalBaseHours * ordinaryHourlyWage); // 96 * 9,288 = 891,648
+      basicPayExplanation = `기본근로 ${totalBaseHours}시간 [주휴수당 포함]`;
+
+      overtimeHours1 = activeDays * 1.0; // 11h
+      overtimeAllowance1 = Math.round(overtimeHours1 * ordinaryHourlyWage * 1.5); // 11 * 9,288 * 1.5 = 153,252
+      overtimeExplanation1 = `${overtimeHours1}시간 x ${ordinaryHourlyWage.toLocaleString()}원 x 1.5`;
+
+      overtimeHours2 = 0;
+      overtimeAllowance2 = 0;
+      overtimeExplanation2 = '연장근로수당 없음';
+
+      annualLeaveAllowance = 0;
+      annualLeaveExplanation = '해당 없음 (입사 당월)';
+
+      attendanceBonus = 0;
+      substituteAllowance = 0;
+      specialAllowance = 0;
+    } else if (isProbationWorker) {
+      // 수습사원 90% 시급(9,288원) 체계 (정용주 등)
       basicPay = 1941192;
       basicPayExplanation = '기본근로 209시간 [주휴수당 포함]';
       overtimeHours1 = 22.0;
@@ -510,32 +533,6 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
         basicPay = Math.round(209 * ordinaryHourlyWage);
       }
       basicPayExplanation = '기본근로 209시간 [주휴수당 포함]';
-    }
-
-    // 중도 입사자(예: 7월 19일 입사) 실 근태시간 기준 정산 (96시간 기본 + 11시간 연장)
-    if (isMidMonthHire) {
-      const activeDays = workingDaysCount > 0 ? workingDaysCount : 11;
-      const regularWorkingHours = activeDays * 8.0; // 88h
-      const weeklyHolidayHours = activeDays >= 5 ? 8.0 : 0; // 8h
-      const totalBaseHours = regularWorkingHours + weeklyHolidayHours; // 96h
-      
-      basicPay = Math.round(totalBaseHours * ordinaryHourlyWage); // 96 * 9,288 = 891,648
-      basicPayExplanation = `기본근로 ${totalBaseHours}시간 [주휴수당 포함]`;
-
-      overtimeHours1 = activeDays * 1.0; // 11h
-      overtimeAllowance1 = Math.round(overtimeHours1 * ordinaryHourlyWage * 1.5); // 11 * 9,288 * 1.5 = 153,252
-      overtimeExplanation1 = `${overtimeHours1}시간 x ${ordinaryHourlyWage.toLocaleString()}원 x 1.5`;
-
-      overtimeHours2 = 0;
-      overtimeAllowance2 = 0;
-      overtimeExplanation2 = '연장근로수당 없음';
-
-      annualLeaveAllowance = 0;
-      annualLeaveExplanation = '해당 없음 (입사 당월)';
-
-      attendanceBonus = 0;
-      substituteAllowance = 0;
-      specialAllowance = 0;
     }
 
   } else if (isMorningShift) {
