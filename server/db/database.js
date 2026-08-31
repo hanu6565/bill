@@ -31,6 +31,8 @@ export function getDb() {
   return dbInstance;
 }
 
+const sanitizeParams = (params = []) => params.map(p => p === undefined ? null : p);
+
 /**
  * Promisified & synchronous database wrappers for Node.js native sqlite
  */
@@ -38,7 +40,7 @@ export const query = (sql, params = []) => {
   try {
     const db = getDb();
     const stmt = db.prepare(sql);
-    return Promise.resolve(stmt.all(...params));
+    return Promise.resolve(stmt.all(...sanitizeParams(params)));
   } catch (err) {
     return Promise.reject(err);
   }
@@ -48,7 +50,7 @@ export const get = (sql, params = []) => {
   try {
     const db = getDb();
     const stmt = db.prepare(sql);
-    return Promise.resolve(stmt.get(...params));
+    return Promise.resolve(stmt.get(...sanitizeParams(params)));
   } catch (err) {
     return Promise.reject(err);
   }
@@ -58,7 +60,7 @@ export const run = (sql, params = []) => {
   try {
     const db = getDb();
     const stmt = db.prepare(sql);
-    const result = stmt.run(...params);
+    const result = stmt.run(...sanitizeParams(params));
     return Promise.resolve({
       lastID: Number(result.lastInsertRowid),
       changes: Number(result.changes)
@@ -94,10 +96,12 @@ export async function initDatabase() {
     `CREATE TABLE IF NOT EXISTS stores (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
+      business_number TEXT,
       biz_number TEXT,
       ceo_name TEXT,
       phone TEXT,
       address TEXT,
+      accident_rate REAL DEFAULT 0.9,
       default_break_time_minutes INTEGER DEFAULT 60,
       default_wage_type TEXT DEFAULT 'MONTHLY',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -262,6 +266,52 @@ export async function initDatabase() {
   for (const sql of statements) {
     await exec(sql);
   }
+
+  // Auto migrate missing columns in existing SQLite tables
+  try {
+    const storeCols = await query("PRAGMA table_info(stores)");
+    const sNames = storeCols.map(c => c.name);
+    if (!sNames.includes('biz_number')) await exec("ALTER TABLE stores ADD COLUMN biz_number TEXT;");
+    if (!sNames.includes('business_number')) await exec("ALTER TABLE stores ADD COLUMN business_number TEXT;");
+    if (!sNames.includes('accident_rate')) await exec("ALTER TABLE stores ADD COLUMN accident_rate REAL DEFAULT 0.9;");
+
+    const empCols = await query("PRAGMA table_info(employees)");
+    const eNames = empCols.map(c => c.name);
+    if (!eNames.includes('phone')) await exec("ALTER TABLE employees ADD COLUMN phone TEXT;");
+    if (!eNames.includes('position')) await exec("ALTER TABLE employees ADD COLUMN position TEXT;");
+    if (!eNames.includes('bank_name')) await exec("ALTER TABLE employees ADD COLUMN bank_name TEXT;");
+    if (!eNames.includes('account_number')) await exec("ALTER TABLE employees ADD COLUMN account_number TEXT;");
+    if (!eNames.includes('fixed_work_hours')) await exec("ALTER TABLE employees ADD COLUMN fixed_work_hours TEXT;");
+    if (!eNames.includes('has_car')) await exec("ALTER TABLE employees ADD COLUMN has_car INTEGER DEFAULT 0;");
+    if (!eNames.includes('is_dual_reporting')) await exec("ALTER TABLE employees ADD COLUMN is_dual_reporting INTEGER DEFAULT 0;");
+    if (!eNames.includes('reported_salary')) await exec("ALTER TABLE employees ADD COLUMN reported_salary INTEGER DEFAULT 0;");
+    if (!eNames.includes('probation_applicable')) await exec("ALTER TABLE employees ADD COLUMN probation_applicable INTEGER DEFAULT 0;");
+    if (!eNames.includes('probation_rate')) await exec("ALTER TABLE employees ADD COLUMN probation_rate REAL DEFAULT 90.0;");
+    if (!eNames.includes('non_taxable_meal')) await exec("ALTER TABLE employees ADD COLUMN non_taxable_meal INTEGER DEFAULT 0;");
+    if (!eNames.includes('non_taxable_car')) await exec("ALTER TABLE employees ADD COLUMN non_taxable_car INTEGER DEFAULT 0;");
+    if (!eNames.includes('non_taxable_overtime')) await exec("ALTER TABLE employees ADD COLUMN non_taxable_overtime INTEGER DEFAULT 0;");
+    if (!eNames.includes('ordinary_wage_items')) await exec("ALTER TABLE employees ADD COLUMN ordinary_wage_items TEXT;");
+    if (!eNames.includes('payslip_display_mode')) await exec("ALTER TABLE employees ADD COLUMN payslip_display_mode TEXT DEFAULT 'STANDARD';");
+    const attCols = await query("PRAGMA table_info(attendance)");
+    const aNames = attCols.map(c => c.name);
+    if (!aNames.includes('holiday_hours')) await exec("ALTER TABLE attendance ADD COLUMN holiday_hours REAL DEFAULT 0;");
+    if (!aNames.includes('public_holiday_hours')) await exec("ALTER TABLE attendance ADD COLUMN public_holiday_hours REAL DEFAULT 0;");
+    if (!aNames.includes('is_public_holiday')) await exec("ALTER TABLE attendance ADD COLUMN is_public_holiday INTEGER DEFAULT 0;");
+    if (!aNames.includes('is_weekly_holiday')) await exec("ALTER TABLE attendance ADD COLUMN is_weekly_holiday INTEGER DEFAULT 0;");
+    if (!aNames.includes('is_annual_leave')) await exec("ALTER TABLE attendance ADD COLUMN is_annual_leave INTEGER DEFAULT 0;");
+    if (!aNames.includes('is_unpaid_leave')) await exec("ALTER TABLE attendance ADD COLUMN is_unpaid_leave INTEGER DEFAULT 0;");
+    if (!aNames.includes('is_absent')) await exec("ALTER TABLE attendance ADD COLUMN is_absent INTEGER DEFAULT 0;");
+
+    const pdCols = await query("PRAGMA table_info(payroll_details)");
+    const pNames = pdCols.map(c => c.name);
+    if (!pNames.includes('public_holiday_allowance')) await exec("ALTER TABLE payroll_details ADD COLUMN public_holiday_allowance INTEGER DEFAULT 0;");
+    if (!pNames.includes('unreported_diff_deduction')) await exec("ALTER TABLE payroll_details ADD COLUMN unreported_diff_deduction INTEGER DEFAULT 0;");
+    if (!pNames.includes('probation_deduction')) await exec("ALTER TABLE payroll_details ADD COLUMN probation_deduction INTEGER DEFAULT 0;");
+    if (!pNames.includes('biz_account_pay')) await exec("ALTER TABLE payroll_details ADD COLUMN biz_account_pay INTEGER DEFAULT 0;");
+    if (!pNames.includes('personal_account_pay')) await exec("ALTER TABLE payroll_details ADD COLUMN personal_account_pay INTEGER DEFAULT 0;");
+    if (!pNames.includes('comparison_data')) await exec("ALTER TABLE payroll_details ADD COLUMN comparison_data TEXT;");
+  } catch (e) {}
+
   console.log('✅ SQLite Database schema initialized successfully.');
 }
 
