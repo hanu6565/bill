@@ -7,35 +7,36 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// In Vercel or AWS Lambda, the local filesystem is read-only except os.tmpdir() (/tmp)
-const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
-const dbDir = isServerless ? os.tmpdir() : path.join(__dirname, '../../data');
+let dbInstance = null;
 
-if (!fs.existsSync(dbDir)) {
-  try {
-    fs.mkdirSync(dbDir, { recursive: true });
-  } catch (e) {
-    console.warn('Directory creation notice:', e.message);
+export function getDb() {
+  if (!dbInstance) {
+    try {
+      const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+      const dbDir = isServerless ? os.tmpdir() : path.join(__dirname, '../../data');
+      if (!fs.existsSync(dbDir)) {
+        try { fs.mkdirSync(dbDir, { recursive: true }); } catch (e) {}
+      }
+      const dbPath = path.join(dbDir, 'payroll.sqlite');
+      dbInstance = new DatabaseSync(dbPath);
+      if (!isServerless) {
+        try { dbInstance.exec('PRAGMA journal_mode = WAL;'); } catch (e) {}
+      }
+      try { dbInstance.exec('PRAGMA foreign_keys = ON;'); } catch (e) {}
+    } catch (err) {
+      console.warn('Notice: using in-memory SQLite fallback:', err.message);
+      dbInstance = new DatabaseSync(':memory:');
+    }
   }
+  return dbInstance;
 }
-
-const dbPath = path.join(dbDir, 'payroll.sqlite');
-const db = new DatabaseSync(dbPath);
-
-if (!isServerless) {
-  try {
-    db.exec('PRAGMA journal_mode = WAL;');
-  } catch (e) {}
-}
-try {
-  db.exec('PRAGMA foreign_keys = ON;');
-} catch (e) {}
 
 /**
  * Promisified & synchronous database wrappers for Node.js native sqlite
  */
 export const query = (sql, params = []) => {
   try {
+    const db = getDb();
     const stmt = db.prepare(sql);
     return Promise.resolve(stmt.all(...params));
   } catch (err) {
@@ -45,6 +46,7 @@ export const query = (sql, params = []) => {
 
 export const get = (sql, params = []) => {
   try {
+    const db = getDb();
     const stmt = db.prepare(sql);
     return Promise.resolve(stmt.get(...params));
   } catch (err) {
@@ -54,6 +56,7 @@ export const get = (sql, params = []) => {
 
 export const run = (sql, params = []) => {
   try {
+    const db = getDb();
     const stmt = db.prepare(sql);
     const result = stmt.run(...params);
     return Promise.resolve({
@@ -67,6 +70,7 @@ export const run = (sql, params = []) => {
 
 export const exec = (sql) => {
   try {
+    const db = getDb();
     db.exec(sql);
     return Promise.resolve();
   } catch (err) {
@@ -255,7 +259,7 @@ export async function initDatabase() {
   `;
 
   await exec(schema);
-  console.log('✅ SQLite Database schema initialized successfully via native node:sqlite.');
+  console.log('✅ SQLite Database schema initialized successfully.');
 }
 
 export default {
@@ -263,5 +267,6 @@ export default {
   get,
   run,
   exec,
-  initDatabase
+  initDatabase,
+  getDb
 };

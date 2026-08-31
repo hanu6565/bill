@@ -38,12 +38,12 @@ async function ensureDatabaseReady() {
         await initHolidays();
         const usersCount = await db.get('SELECT COUNT(*) as count FROM users');
         if (!usersCount || usersCount.count === 0) {
-          console.log('🔄 Initializing database with seeds...');
+          console.log('🔄 Initializing database with default seeds...');
           await runSeeds();
         }
         dbInitialized = true;
       } catch (err) {
-        console.error('Failed to initialize database:', err);
+        console.error('Database initialization error:', err);
         throw err;
       }
     })();
@@ -56,7 +56,11 @@ app.use(async (req, res, next) => {
     await ensureDatabaseReady();
     next();
   } catch (err) {
-    res.status(500).json({ success: false, message: '데이터베이스 초기화 중 오류가 발생했습니다.' });
+    console.error('Request middleware database error:', err);
+    res.status(500).json({ 
+      success: false, 
+      message: '데이터베이스 초기화 중 오류: ' + (err.message || String(err)) 
+    });
   }
 });
 

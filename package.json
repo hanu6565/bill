@@ -4,6 +4,9 @@
   "description": "요식업 다중 매장 급여 계산 및 급여명세서·임금대장 발급 웹애플리케이션",
   "main": "server/index.js",
   "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm --prefix client run dev\"",
     "server": "node server/index.js",
