@@ -82,17 +82,16 @@ export const exec = (sql) => {
  * Initialize all database tables and indexes
  */
 export async function initDatabase() {
-  const schema = `
-    CREATE TABLE IF NOT EXISTS users (
+  const statements = [
+    `CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
       email TEXT,
       role TEXT NOT NULL DEFAULT 'ADMIN',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS stores (
+    )`,
+    `CREATE TABLE IF NOT EXISTS stores (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       biz_number TEXT,
@@ -103,9 +102,8 @@ export async function initDatabase() {
       default_wage_type TEXT DEFAULT 'MONTHLY',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS employees (
+    )`,
+    `CREATE TABLE IF NOT EXISTS employees (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       store_id INTEGER NOT NULL,
       name TEXT NOT NULL,
@@ -144,9 +142,8 @@ export async function initDatabase() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE
-    );
-
-    CREATE TABLE IF NOT EXISTS attendance (
+    )`,
+    `CREATE TABLE IF NOT EXISTS attendance (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       employee_id INTEGER NOT NULL,
       store_id INTEGER NOT NULL,
@@ -171,9 +168,8 @@ export async function initDatabase() {
       FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE,
       FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE,
       UNIQUE(employee_id, work_date)
-    );
-
-    CREATE TABLE IF NOT EXISTS payroll_runs (
+    )`,
+    `CREATE TABLE IF NOT EXISTS payroll_runs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       store_id INTEGER NOT NULL,
       year_month TEXT NOT NULL,
@@ -188,9 +184,8 @@ export async function initDatabase() {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE,
       UNIQUE(store_id, year_month)
-    );
-
-    CREATE TABLE IF NOT EXISTS payroll_details (
+    )`,
+    `CREATE TABLE IF NOT EXISTS payroll_details (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       payroll_run_id INTEGER NOT NULL,
       employee_id INTEGER NOT NULL,
@@ -233,9 +228,8 @@ export async function initDatabase() {
       FOREIGN KEY (payroll_run_id) REFERENCES payroll_runs(id) ON DELETE CASCADE,
       FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE,
       UNIQUE(payroll_run_id, employee_id)
-    );
-
-    CREATE TABLE IF NOT EXISTS public_holidays (
+    )`,
+    `CREATE TABLE IF NOT EXISTS public_holidays (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       holiday_date DATE NOT NULL UNIQUE,
       holiday_name TEXT NOT NULL,
@@ -243,32 +237,31 @@ export async function initDatabase() {
       is_manual INTEGER DEFAULT 0,
       year INTEGER,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS statutory_holidays (
+    )`,
+    `CREATE TABLE IF NOT EXISTS statutory_holidays (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       holiday_date DATE NOT NULL UNIQUE,
       name TEXT NOT NULL,
       is_recurring INTEGER DEFAULT 0,
       is_active INTEGER DEFAULT 1,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS system_settings (
+    )`,
+    `CREATE TABLE IF NOT EXISTS system_settings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       key TEXT UNIQUE NOT NULL,
       value TEXT NOT NULL,
       description TEXT,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_emp_store ON employees(store_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_att_date ON attendance(work_date)`,
+    `CREATE INDEX IF NOT EXISTS idx_att_emp_date ON attendance(employee_id, work_date)`,
+    `CREATE INDEX IF NOT EXISTS idx_payroll_detail_run ON payroll_details(payroll_run_id)`
+  ];
 
-    CREATE INDEX IF NOT EXISTS idx_emp_store ON employees(store_id);
-    CREATE INDEX IF NOT EXISTS idx_att_date ON attendance(work_date);
-    CREATE INDEX IF NOT EXISTS idx_att_emp_date ON attendance(employee_id, work_date);
-    CREATE INDEX IF NOT EXISTS idx_payroll_detail_run ON payroll_details(payroll_run_id);
-  `;
-
-  await exec(schema);
+  for (const sql of statements) {
+    await exec(sql);
+  }
   console.log('✅ SQLite Database schema initialized successfully.');
 }
 
