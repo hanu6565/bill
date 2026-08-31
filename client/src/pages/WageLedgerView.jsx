@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TableProperties, Printer, FileSpreadsheet, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
+import { TableProperties, Printer, FileSpreadsheet, Eye, EyeOff } from 'lucide-react';
 import api from '../services/api';
 
 export default function WageLedgerView({ stores, currentStoreId }) {
@@ -57,12 +57,85 @@ export default function WageLedgerView({ stores, currentStoreId }) {
   };
 
   const formatVal = (val) => {
-    if (!val || val === 0) return '-';
+    if (val === undefined || val === null || val === 0 || val === '0' || val === '') return '-';
     return Number(val).toLocaleString();
   };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* Inline Scoped Styles to override all dark mode styles and ensure 100% visible black text */}
+      <style>{`
+        #root .wage-ledger-wrapper,
+        #root .wage-ledger-document,
+        #root .wage-ledger-document *,
+        #root .wage-ledger-document table,
+        #root .wage-ledger-document thead,
+        #root .wage-ledger-document tbody,
+        #root .wage-ledger-document tr,
+        #root .wage-ledger-document th,
+        #root .wage-ledger-document td,
+        #root .wage-ledger-document span,
+        #root .wage-ledger-document div,
+        #root .wage-ledger-document h2 {
+          color: #000000 !important;
+          font-family: 'Pretendard', 'Malgun Gothic', sans-serif !important;
+          box-sizing: border-box !important;
+        }
+
+        #root .wage-ledger-document {
+          background-color: #ffffff !important;
+          border: 1px solid #94a3b8 !important;
+          box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        #root .wage-ledger-table {
+          width: 100% !important;
+          border-collapse: collapse !important;
+          background-color: #ffffff !important;
+          border: 1.5px solid #000000 !important;
+          table-layout: fixed !important;
+        }
+
+        #root .wage-ledger-table th {
+          background-color: #fef9c3 !important;
+          color: #000000 !important;
+          border: 1px solid #000000 !important;
+          font-weight: 700 !important;
+          text-align: center !important;
+          vertical-align: middle !important;
+          padding: 3px 2px !important;
+        }
+
+        #root .wage-ledger-table tr.group-header th {
+          background-color: #fef3c7 !important;
+          padding: 5px 4px !important;
+        }
+
+        #root .wage-ledger-table td {
+          background-color: #ffffff !important;
+          color: #000000 !important;
+          border: 1px solid #000000 !important;
+          vertical-align: middle !important;
+          font-size: 11px !important;
+          height: 22px !important;
+          padding: 2px 3px !important;
+        }
+
+        #root .wage-ledger-table td.num {
+          text-align: right !important;
+          padding-right: 4px !important;
+          font-variant-numeric: tabular-nums !important;
+        }
+
+        #root .wage-ledger-table td.center {
+          text-align: center !important;
+        }
+
+        #root .wage-ledger-table td.bold {
+          font-weight: 700 !important;
+        }
+      `}</style>
+
       {/* Top Action Bar */}
       <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
@@ -133,11 +206,9 @@ export default function WageLedgerView({ stores, currentStoreId }) {
               style={{
                 background: '#ffffff',
                 color: '#000000',
-                padding: '24px 20px',
+                padding: '24px 18px',
                 borderRadius: '8px',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                overflowX: 'auto',
-                fontFamily: "'Pretendard', 'Malgun Gothic', sans-serif"
+                overflowX: 'auto'
               }}
             >
               {/* Document Header Title (Centered, Large Bold) */}
@@ -148,66 +219,81 @@ export default function WageLedgerView({ stores, currentStoreId }) {
               </div>
 
               {/* Exact Standard 2-Row Wage Ledger Table */}
-              <table 
-                className="wage-ledger-table"
-                style={{ 
-                  width: '100%', 
-                  borderCollapse: 'collapse', 
-                  fontSize: '11px',
-                  border: '1.5px solid #000000',
-                  textAlign: 'center',
-                  background: '#ffffff',
-                  color: '#000000'
-                }}
-              >
+              <table className="wage-ledger-table">
+                {/* 22 Column Width Definitions */}
+                <colgroup>
+                  <col style={{ width: '28px' }} />  {/* 연번 */}
+                  <col style={{ width: '55px' }} />  {/* 성명 */}
+                  <col style={{ width: '95px' }} />  {/* 주민등록번호 */}
+                  <col style={{ width: '70px' }} />  {/* 입사일 */}
+                  <col style={{ width: '55px' }} />  {/* 퇴사일 */}
+                  <col style={{ width: '45px' }} />  {/* 부양가족 수 */}
+                  <col style={{ width: '75px' }} />  {/* 기본급 */}
+                  <col style={{ width: '58px' }} />  {/* 연장/야간 */}
+                  <col style={{ width: '58px' }} />  {/* 휴일/상여 */}
+                  <col style={{ width: '65px' }} />  {/* 대체/특근 */}
+                  <col style={{ width: '58px' }} />  {/* 만근/공휴 */}
+                  <col style={{ width: '55px' }} />  {/* 연차 */}
+                  <col style={{ width: '60px' }} />  {/* 운전보조 */}
+                  <col style={{ width: '75px' }} />  {/* 지급액 계 */}
+                  <col style={{ width: '75px' }} />  {/* 과세소득 */}
+                  <col style={{ width: '58px' }} />  {/* 국민/지방 */}
+                  <col style={{ width: '58px' }} />  {/* 건강/수습 */}
+                  <col style={{ width: '60px' }} />  {/* 장기/갑근 */}
+                  <col style={{ width: '58px' }} />  {/* 고용/지방 */}
+                  <col style={{ width: '55px' }} />  {/* 소득/근태 */}
+                  <col style={{ width: '65px' }} />  {/* 공제액 계 */}
+                  <col style={{ width: '75px' }} />  {/* 차인지급액 */}
+                </colgroup>
+
                 <thead>
                   {/* Top Major Group Headers */}
-                  <tr className="group-header" style={{ background: '#fef3c7', color: '#000000', fontWeight: '700', borderBottom: '1px solid #000000' }}>
-                    <th colSpan="6" style={{ border: '1px solid #000000', padding: '5px 4px', color: '#000000', background: '#fef3c7' }}>인적사항</th>
-                    <th colSpan="9" style={{ border: '1px solid #000000', padding: '5px 4px', color: '#000000', background: '#fef3c7' }}>지급내역</th>
-                    <th colSpan="6" style={{ border: '1px solid #000000', padding: '5px 4px', color: '#000000', background: '#fef3c7' }}>공제내역</th>
-                    <th rowSpan="2" style={{ border: '1px solid #000000', padding: '5px 6px', background: '#fef08a', color: '#000000', verticalAlign: 'middle', width: '80px' }}>차인지급액</th>
+                  <tr className="group-header">
+                    <th colSpan="6">인적사항</th>
+                    <th colSpan="9">지급내역</th>
+                    <th colSpan="6">공제내역</th>
+                    <th rowSpan="2" style={{ background: '#fef08a' }}>차인지급액</th>
                   </tr>
 
                   {/* Sub Header - Row 1 (Upper Items) */}
-                  <tr style={{ background: '#fef9c3', color: '#000000', fontWeight: '700', fontSize: '10.5px' }}>
-                    <th rowSpan="2" style={{ border: '1px solid #000000', width: '32px', color: '#000000', background: '#fef9c3', verticalAlign: 'middle' }}>연번</th>
-                    <th rowSpan="2" style={{ border: '1px solid #000000', width: '65px', color: '#000000', background: '#fef9c3', verticalAlign: 'middle' }}>성명</th>
-                    <th rowSpan="2" style={{ border: '1px solid #000000', width: '105px', color: '#000000', background: '#fef9c3', verticalAlign: 'middle' }}>주민등록번호</th>
-                    <th rowSpan="2" style={{ border: '1px solid #000000', width: '75px', color: '#000000', background: '#fef9c3', verticalAlign: 'middle' }}>입사일</th>
-                    <th rowSpan="2" style={{ border: '1px solid #000000', width: '65px', color: '#000000', background: '#fef9c3', verticalAlign: 'middle' }}>퇴사일</th>
-                    <th rowSpan="2" style={{ border: '1px solid #000000', width: '55px', color: '#000000', background: '#fef9c3', verticalAlign: 'middle' }}>부양가족 수</th>
+                  <tr style={{ fontSize: '10.5px' }}>
+                    <th rowSpan="2">연번</th>
+                    <th rowSpan="2">성명</th>
+                    <th rowSpan="2">주민등록번호</th>
+                    <th rowSpan="2">입사일</th>
+                    <th rowSpan="2">퇴사일</th>
+                    <th rowSpan="2">부양가족 수</th>
                     
-                    <th rowSpan="2" style={{ border: '1px solid #000000', width: '75px', color: '#000000', background: '#fef9c3', verticalAlign: 'middle' }}>기본급</th>
-                    <th style={{ border: '1px solid #000000', width: '60px', padding: '3px 2px', color: '#000000', background: '#fef9c3' }}>연장수당</th>
-                    <th style={{ border: '1px solid #000000', width: '60px', padding: '3px 2px', color: '#000000', background: '#fef9c3' }}>휴일수당</th>
-                    <th style={{ border: '1px solid #000000', width: '65px', padding: '3px 2px', color: '#000000', background: '#fef9c3' }}>대체근로수당</th>
-                    <th style={{ border: '1px solid #000000', width: '60px', padding: '3px 2px', color: '#000000', background: '#fef9c3' }}>만근수당</th>
-                    <th rowSpan="2" style={{ border: '1px solid #000000', width: '55px', color: '#000000', background: '#fef9c3', verticalAlign: 'middle' }}>연차수당</th>
-                    <th rowSpan="2" style={{ border: '1px solid #000000', width: '65px', color: '#000000', background: '#fef9c3', verticalAlign: 'middle' }}>운전보조금</th>
-                    <th rowSpan="2" style={{ border: '1px solid #000000', width: '75px', color: '#000000', background: '#fef9c3', verticalAlign: 'middle' }}>지급액 계</th>
-                    <th rowSpan="2" style={{ border: '1px solid #000000', width: '75px', color: '#000000', background: '#fef9c3', verticalAlign: 'middle' }}>과세소득액</th>
+                    <th rowSpan="2">기본급</th>
+                    <th>연장수당</th>
+                    <th>휴일수당</th>
+                    <th>대체근로수당</th>
+                    <th>만근수당</th>
+                    <th rowSpan="2">연차수당</th>
+                    <th rowSpan="2">운전보조금</th>
+                    <th rowSpan="2">지급액 계</th>
+                    <th rowSpan="2">과세소득액</th>
 
-                    <th style={{ border: '1px solid #000000', width: '60px', padding: '3px 2px', color: '#000000', background: '#fef9c3' }}>국민연금</th>
-                    <th style={{ border: '1px solid #000000', width: '60px', padding: '3px 2px', color: '#000000', background: '#fef9c3' }}>건강보험</th>
-                    <th style={{ border: '1px solid #000000', width: '65px', padding: '3px 2px', color: '#000000', background: '#fef9c3' }}>장기요양보험</th>
-                    <th style={{ border: '1px solid #000000', width: '60px', padding: '3px 2px', color: '#000000', background: '#fef9c3' }}>고용보험</th>
-                    <th style={{ border: '1px solid #000000', width: '55px', padding: '3px 2px', color: '#000000', background: '#fef9c3' }}>소득세</th>
-                    <th rowSpan="2" style={{ border: '1px solid #000000', width: '65px', color: '#000000', background: '#fef9c3', verticalAlign: 'middle' }}>공제액 계</th>
+                    <th>국민연금</th>
+                    <th>건강보험</th>
+                    <th>장기요양보험</th>
+                    <th>고용보험</th>
+                    <th>소득세</th>
+                    <th rowSpan="2">공제액 계</th>
                   </tr>
 
                   {/* Sub Header - Row 2 (Lower Items) */}
-                  <tr style={{ background: '#fef9c3', color: '#000000', fontWeight: '700', fontSize: '10.5px' }}>
-                    <th style={{ border: '1px solid #000000', padding: '3px 2px', color: '#000000', background: '#fef9c3' }}>야간수당</th>
-                    <th style={{ border: '1px solid #000000', padding: '3px 2px', color: '#000000', background: '#fef9c3' }}>상여금</th>
-                    <th style={{ border: '1px solid #000000', padding: '3px 2px', color: '#000000', background: '#fef9c3' }}>특근수당</th>
-                    <th style={{ border: '1px solid #000000', padding: '3px 2px', color: '#000000', background: '#fef9c3' }}>공휴일수당</th>
+                  <tr style={{ fontSize: '10.5px' }}>
+                    <th>야간수당</th>
+                    <th>상여금</th>
+                    <th>특근수당</th>
+                    <th>공휴일수당</th>
 
-                    <th style={{ border: '1px solid #000000', padding: '3px 2px', color: '#000000', background: '#fef9c3' }}>지방소득세</th>
-                    <th style={{ border: '1px solid #000000', padding: '3px 2px', color: '#000000', background: '#fef9c3' }}>수습공제</th>
-                    <th style={{ border: '1px solid #000000', padding: '3px 2px', color: '#000000', background: '#fef9c3' }}>연말갑근세</th>
-                    <th style={{ border: '1px solid #000000', padding: '3px 2px', color: '#000000', background: '#fef9c3' }}>연말지방세</th>
-                    <th style={{ border: '1px solid #000000', padding: '3px 2px', color: '#000000', background: '#fef9c3' }}>근태공제</th>
+                    <th>지방소득세</th>
+                    <th>수습공제</th>
+                    <th>연말갑근세</th>
+                    <th>연말지방세</th>
+                    <th>근태공제</th>
                   </tr>
                 </thead>
 
@@ -220,16 +306,14 @@ export default function WageLedgerView({ stores, currentStoreId }) {
                         : (item.calculation_breakdown || {});
                     } catch (e) {}
 
-                    // Exact mapping matching the user's official ledger template
+                    // Exact values matching the user's official ledger template
                     const isDualReport = Boolean(item.is_dual_reporting === 1 && item.reported_salary > 0);
                     
-                    // Basic Pay
                     let displayBasicPay = item.basic_pay;
                     if (isDualReport) {
                       displayBasicPay = 2156880;
                     }
 
-                    // Overtime 1 & 2
                     let ot1 = 0;
                     let ot2 = 0;
                     let subst = 0;
@@ -273,66 +357,52 @@ export default function WageLedgerView({ stores, currentStoreId }) {
                     return (
                       <React.Fragment key={item.id}>
                         {/* Upper Line (Row 1) */}
-                        <tr style={{ height: '23px', background: '#ffffff' }}>
-                          <td rowSpan="2" style={{ border: '1px solid #000000', verticalAlign: 'middle', color: '#000000', background: '#ffffff' }}>{idx + 1}</td>
-                          <td rowSpan="2" style={{ border: '1px solid #000000', fontWeight: '700', verticalAlign: 'middle', color: '#000000', background: '#ffffff' }}>{item.employee_name}</td>
-                          <td rowSpan="2" style={{ border: '1px solid #000000', fontFamily: 'monospace', fontSize: '10px', verticalAlign: 'middle', color: '#000000', background: '#ffffff' }}>{rrnDisplay}</td>
-                          <td rowSpan="2" style={{ border: '1px solid #000000', verticalAlign: 'middle', color: '#000000', background: '#ffffff' }}>{item.hire_date}</td>
-                          <td rowSpan="2" style={{ border: '1px solid #000000', verticalAlign: 'middle', color: '#000000', background: '#ffffff' }}>{item.resign_date || '-'}</td>
-                          <td rowSpan="2" style={{ border: '1px solid #000000', verticalAlign: 'middle', color: '#000000', background: '#ffffff' }}>{item.dependents_count !== undefined ? item.dependents_count : 1}</td>
+                        <tr>
+                          <td rowSpan="2" className="center">{idx + 1}</td>
+                          <td rowSpan="2" className="center bold">{item.employee_name}</td>
+                          <td rowSpan="2" className="center" style={{ fontFamily: 'monospace', fontSize: '9.5px' }}>{rrnDisplay}</td>
+                          <td rowSpan="2" className="center">{item.hire_date}</td>
+                          <td rowSpan="2" className="center">{item.resign_date || '-'}</td>
+                          <td rowSpan="2" className="center">{item.dependents_count !== undefined ? item.dependents_count : 1}</td>
                           
-                          <td rowSpan="2" style={{ border: '1px solid #000000', textAlign: 'right', paddingRight: '4px', verticalAlign: 'middle', color: '#000000', background: '#ffffff' }}>
-                            {formatVal(displayBasicPay)}
-                          </td>
+                          <td rowSpan="2" className="num">{formatVal(displayBasicPay)}</td>
                           
                           {/* Upper Earnings */}
-                          <td style={{ border: '1px solid #000000', textAlign: 'right', paddingRight: '4px', color: '#000000', background: '#ffffff' }}>{formatVal(ot1)}</td>
-                          <td style={{ border: '1px solid #000000', textAlign: 'right', paddingRight: '4px', color: '#000000', background: '#ffffff' }}>{formatVal(ot2)}</td>
-                          <td style={{ border: '1px solid #000000', textAlign: 'right', paddingRight: '4px', color: '#000000', background: '#ffffff' }}>{formatVal(subst)}</td>
-                          <td style={{ border: '1px solid #000000', textAlign: 'right', paddingRight: '4px', color: '#000000', background: '#ffffff' }}>{formatVal(attendBonus)}</td>
+                          <td className="num">{formatVal(ot1)}</td>
+                          <td className="num">{formatVal(ot2)}</td>
+                          <td className="num">{formatVal(subst)}</td>
+                          <td className="num">{formatVal(attendBonus)}</td>
                           
-                          <td rowSpan="2" style={{ border: '1px solid #000000', textAlign: 'right', paddingRight: '4px', verticalAlign: 'middle', color: '#000000', background: '#ffffff' }}>
-                            {formatVal(annualLeave)}
-                          </td>
-                          <td rowSpan="2" style={{ border: '1px solid #000000', textAlign: 'right', paddingRight: '4px', verticalAlign: 'middle', color: '#000000', background: '#ffffff' }}>
-                            {formatVal(drivingAllowance)}
-                          </td>
-                          <td rowSpan="2" style={{ border: '1px solid #000000', textAlign: 'right', paddingRight: '4px', verticalAlign: 'middle', fontWeight: '700', color: '#000000', background: '#ffffff' }}>
-                            {formatVal(reportableGross)}
-                          </td>
-                          <td rowSpan="2" style={{ border: '1px solid #000000', textAlign: 'right', paddingRight: '4px', verticalAlign: 'middle', color: '#000000', background: '#ffffff' }}>
-                            {formatVal(taxableIncome)}
-                          </td>
+                          <td rowSpan="2" className="num">{formatVal(annualLeave)}</td>
+                          <td rowSpan="2" className="num">{formatVal(drivingAllowance)}</td>
+                          <td rowSpan="2" className="num bold">{formatVal(reportableGross)}</td>
+                          <td rowSpan="2" className="num">{formatVal(taxableIncome)}</td>
 
                           {/* Upper Deductions */}
-                          <td style={{ border: '1px solid #000000', textAlign: 'right', paddingRight: '4px', color: '#000000', background: '#ffffff' }}>{formatVal(pension)}</td>
-                          <td style={{ border: '1px solid #000000', textAlign: 'right', paddingRight: '4px', color: '#000000', background: '#ffffff' }}>{formatVal(health)}</td>
-                          <td style={{ border: '1px solid #000000', textAlign: 'right', paddingRight: '4px', color: '#000000', background: '#ffffff' }}>{formatVal(care)}</td>
-                          <td style={{ border: '1px solid #000000', textAlign: 'right', paddingRight: '4px', color: '#000000', background: '#ffffff' }}>{formatVal(empIns)}</td>
-                          <td style={{ border: '1px solid #000000', textAlign: 'right', paddingRight: '4px', color: '#000000', background: '#ffffff' }}>{formatVal(incTax)}</td>
+                          <td className="num">{formatVal(pension)}</td>
+                          <td className="num">{formatVal(health)}</td>
+                          <td className="num">{formatVal(care)}</td>
+                          <td className="num">{formatVal(empIns)}</td>
+                          <td className="num">{formatVal(incTax)}</td>
                           
-                          <td rowSpan="2" style={{ border: '1px solid #000000', textAlign: 'right', paddingRight: '4px', verticalAlign: 'middle', fontWeight: '700', color: '#000000', background: '#ffffff' }}>
-                            {formatVal(totalDeduct)}
-                          </td>
-                          <td rowSpan="2" style={{ border: '1px solid #000000', textAlign: 'right', paddingRight: '4px', verticalAlign: 'middle', fontWeight: '700', color: '#000000', background: '#ffffff' }}>
-                            {formatVal(netPay)}
-                          </td>
+                          <td rowSpan="2" className="num bold">{formatVal(totalDeduct)}</td>
+                          <td rowSpan="2" className="num bold">{formatVal(netPay)}</td>
                         </tr>
 
                         {/* Lower Line (Row 2) */}
-                        <tr style={{ height: '23px', background: '#ffffff' }}>
+                        <tr>
                           {/* Lower Earnings */}
-                          <td style={{ border: '1px solid #000000', textAlign: 'right', paddingRight: '4px', color: '#000000', background: '#ffffff' }}>-</td>
-                          <td style={{ border: '1px solid #000000', textAlign: 'right', paddingRight: '4px', color: '#000000', background: '#ffffff' }}>{formatVal(bon)}</td>
-                          <td style={{ border: '1px solid #000000', textAlign: 'right', paddingRight: '4px', color: '#000000', background: '#ffffff' }}>{formatVal(spec)}</td>
-                          <td style={{ border: '1px solid #000000', textAlign: 'right', paddingRight: '4px', color: '#000000', background: '#ffffff' }}>-</td>
+                          <td className="num">-</td>
+                          <td className="num">{formatVal(bon)}</td>
+                          <td className="num">{formatVal(spec)}</td>
+                          <td className="num">-</td>
 
                           {/* Lower Deductions */}
-                          <td style={{ border: '1px solid #000000', textAlign: 'right', paddingRight: '4px', color: '#000000', background: '#ffffff' }}>{formatVal(locTax)}</td>
-                          <td style={{ border: '1px solid #000000', textAlign: 'right', paddingRight: '4px', color: '#000000', background: '#ffffff' }}>-</td>
-                          <td style={{ border: '1px solid #000000', textAlign: 'right', paddingRight: '4px', color: '#000000', background: '#ffffff' }}>-</td>
-                          <td style={{ border: '1px solid #000000', textAlign: 'right', paddingRight: '4px', color: '#000000', background: '#ffffff' }}>-</td>
-                          <td style={{ border: '1px solid #000000', textAlign: 'right', paddingRight: '4px', color: '#000000', background: '#ffffff' }}>-</td>
+                          <td className="num">{formatVal(locTax)}</td>
+                          <td className="num">-</td>
+                          <td className="num">-</td>
+                          <td className="num">-</td>
+                          <td className="num">-</td>
                         </tr>
                       </React.Fragment>
                     );
@@ -343,45 +413,45 @@ export default function WageLedgerView({ stores, currentStoreId }) {
                     const rowNo = details.length + bIdx + 1;
                     return (
                       <React.Fragment key={`blank-${bIdx}`}>
-                        <tr style={{ height: '23px', background: '#ffffff' }}>
-                          <td rowSpan="2" style={{ border: '1px solid #000000', verticalAlign: 'middle', color: '#000000', background: '#ffffff' }}>{rowNo}</td>
-                          <td rowSpan="2" style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}></td>
-                          <td rowSpan="2" style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}></td>
-                          <td rowSpan="2" style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}></td>
-                          <td rowSpan="2" style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}></td>
-                          <td rowSpan="2" style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}></td>
-                          <td rowSpan="2" style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}></td>
+                        <tr>
+                          <td rowSpan="2" className="center">{rowNo}</td>
+                          <td rowSpan="2"></td>
+                          <td rowSpan="2"></td>
+                          <td rowSpan="2"></td>
+                          <td rowSpan="2"></td>
+                          <td rowSpan="2"></td>
+                          <td rowSpan="2"></td>
                           
-                          <td style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}>-</td>
-                          <td style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}>-</td>
-                          <td style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}>-</td>
-                          <td style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}>-</td>
+                          <td className="num">-</td>
+                          <td className="num">-</td>
+                          <td className="num">-</td>
+                          <td className="num">-</td>
                           
-                          <td rowSpan="2" style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}></td>
-                          <td rowSpan="2" style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}></td>
-                          <td rowSpan="2" style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}></td>
-                          <td rowSpan="2" style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}></td>
+                          <td rowSpan="2"></td>
+                          <td rowSpan="2"></td>
+                          <td rowSpan="2"></td>
+                          <td rowSpan="2"></td>
 
-                          <td style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}></td>
-                          <td style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}></td>
-                          <td style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}></td>
-                          <td style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}></td>
-                          <td style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}></td>
+                          <td className="num"></td>
+                          <td className="num"></td>
+                          <td className="num"></td>
+                          <td className="num"></td>
+                          <td className="num"></td>
                           
-                          <td rowSpan="2" style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}></td>
-                          <td rowSpan="2" style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}></td>
+                          <td rowSpan="2"></td>
+                          <td rowSpan="2"></td>
                         </tr>
-                        <tr style={{ height: '23px', background: '#ffffff' }}>
-                          <td style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}>-</td>
-                          <td style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}>-</td>
-                          <td style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}>-</td>
-                          <td style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}>-</td>
+                        <tr>
+                          <td className="num">-</td>
+                          <td className="num">-</td>
+                          <td className="num">-</td>
+                          <td className="num">-</td>
 
-                          <td style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}></td>
-                          <td style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}></td>
-                          <td style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}></td>
-                          <td style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}></td>
-                          <td style={{ border: '1px solid #000000', color: '#000000', background: '#ffffff' }}></td>
+                          <td className="num"></td>
+                          <td className="num"></td>
+                          <td className="num"></td>
+                          <td className="num"></td>
+                          <td className="num"></td>
                         </tr>
                       </React.Fragment>
                     );
