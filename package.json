@@ -8,11 +8,13 @@
     "dev": "concurrently \"npm run server\" \"npm --prefix client run dev\"",
     "server": "node server/index.js",
     "client": "npm --prefix client run dev",
-    "build": "npm --prefix client run build",
+    "postinstall": "npm --prefix client install",
+    "build": "npm --prefix client install && npm --prefix client run build",
     "test": "node --test server/tests/payrollEngine.test.js",
     "seed": "node server/db/seeds.js"
   },
   "dependencies": {
+    "@vercel/node": "^3.2.33",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
