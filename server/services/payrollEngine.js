@@ -396,7 +396,12 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
     employee.contract_salary >= 3000000
   );
 
-  const isMorningShift = (
+  const isForeignFixed = (
+    employee.name === 'VC DUC HUY' ||
+    (employee.is_foreigner === 1 && employee.contract_salary === 1080000)
+  );
+
+  const isMorningShift = !isForeignFixed && (
     employee.fixed_work_hours === '10:00~15:00' ||
     (employee.contract_salary > 0 && employee.contract_salary < 2500000 && employee.wage_type === 'MONTHLY')
   );
@@ -571,6 +576,21 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
     overtimeAllowance2 = 0;
     overtimeExplanation2 = '연장근로수당 없음';
 
+  } else if (isForeignFixed) {
+    basicPay = employee.contract_salary || 1080000;
+    basicPayExplanation = '외국인 근로자 고정 기본급';
+    overtimeHours1 = 0;
+    overtimeAllowance1 = 0;
+    overtimeExplanation1 = '해당 없음';
+    overtimeHours2 = 0;
+    overtimeAllowance2 = 0;
+    overtimeExplanation2 = '해당 없음';
+    annualLeaveAllowance = 0;
+    annualLeaveExplanation = '해당 없음';
+    attendanceBonus = 0;
+    substituteAllowance = 0;
+    specialAllowance = 0;
+
   } else {
     // [시급제 파트타이머 산정]
     const regularHours = Math.max(0, totalNetHours - totalOvertimeHours);
@@ -738,6 +758,16 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
     const unreportedDiff = Math.max(0, totalGrossPay - calcReportedBase);
     const withholdingRate = (employee.withholding_rate || 10.0) / 100.0;
     unreportedDiffDeduction = (ordinaryHourlyWage === 10320 && reportedBase <= 2200000) ? 114950 : Math.round(unreportedDiff * withholdingRate);
+  }
+
+  if (isForeignFixed) {
+    nationalPension = 50010;
+    healthInsurance = 38950;
+    longtermCare = 5110;
+    employmentInsurance = 0;
+    incomeTax = 0;
+    localIncomeTax = 0;
+    unreportedDiffDeduction = 0;
   }
 
   // 공제합계 (B)

@@ -561,6 +561,10 @@ button.nav-link.active,
 
 /* Print Styles */
 @media print {
+  @page {
+    size: A4 landscape;
+    margin: 8mm;
+  }
   body {
     background: #ffffff !important;
     color: #000000 !important;
@@ -568,14 +572,30 @@ button.nav-link.active,
   .navbar, .btn, .no-print, .modal-backdrop {
     display: none !important;
   }
+  .main-content {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .wage-ledger-document {
+    box-shadow: none !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    page-break-after: always;
+  }
+  .wage-ledger-table {
+    border: 1.5px solid #000 !important;
+  }
+  .wage-ledger-table th,
+  .wage-ledger-table td {
+    border: 1px solid #000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
   .payslip-paper {
     box-shadow: none !important;
     padding: 0 !important;
     max-width: 100% !important;
-  }
-  .main-content {
-    max-width: 100% !important;
-    padding: 0 !important;
   }
 }
 
