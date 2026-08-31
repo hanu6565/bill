@@ -77,15 +77,12 @@ export async function runSeeds() {
       contract_salary: 3011782, hourly_wage: 9288, fixed_work_hours: '09:00~21:00', bank_name: '토스뱅크', account_number: '1000-0192-8374',
       has_car: 0, is_dual_reporting: 0, reported_salary: 0, probation_applicable: 1, probation_rate: 90.0,
       non_taxable_meal: 0, non_taxable_car: 0, non_taxable_overtime: 0
-    },
-    {
-      id: 7, store_id: 1, name: 'VC DUC HUY', rrn: '020307-7520019', hire_date: '2025-12-13', position: '직원',
-      dependents_count: 0, is_foreigner: 1, visa_type: 'E-9', employment_type: 'REGULAR', wage_type: 'MONTHLY',
-      contract_salary: 1080000, hourly_wage: 10320, fixed_work_hours: '10:00~15:00', bank_name: '우리은행', account_number: '1002-384-910293',
-      has_car: 0, is_dual_reporting: 0, reported_salary: 1080000, probation_applicable: 0, probation_rate: 90.0,
-      non_taxable_meal: 0, non_taxable_car: 0, non_taxable_overtime: 0
     }
   ];
+
+  await db.run("DELETE FROM employees WHERE name LIKE '%DUC HUY%' OR name LIKE '%VU DUC%' OR id = 7");
+  await db.run("DELETE FROM payroll_details WHERE employee_id NOT IN (1, 2, 3, 4, 5, 6)");
+  await db.run("DELETE FROM attendance WHERE employee_id NOT IN (1, 2, 3, 4, 5, 6)");
 
   for (const emp of rawEmployees) {
     const rrnEnc = encryptText(emp.rrn);
