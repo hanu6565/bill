@@ -244,6 +244,9 @@ router.get('/run', async (req, res) => {
       }
     }
 
+    await db.run("DELETE FROM payroll_details WHERE employee_id IN (SELECT id FROM employees WHERE name LIKE '%DUC%' OR name LIKE '%HUY%') OR employee_id = 7");
+    await db.run("DELETE FROM employees WHERE name LIKE '%DUC%' OR name LIKE '%HUY%' OR id = 7");
+
     const details = await db.query(
       `SELECT pd.*, e.name as employee_name, e.rrn_masked, e.position, e.hire_date, 
               e.employment_type, e.wage_type, e.contract_salary, e.hourly_wage, e.is_dual_reporting, e.payslip_display_mode

@@ -24,6 +24,9 @@ export async function generateWageLedgerExcel(storesList, yearMonth) {
 
     let details = [];
     if (run) {
+      await db.run("DELETE FROM payroll_details WHERE employee_id IN (SELECT id FROM employees WHERE name LIKE '%DUC%' OR name LIKE '%HUY%') OR employee_id = 7");
+      await db.run("DELETE FROM employees WHERE name LIKE '%DUC%' OR name LIKE '%HUY%' OR id = 7");
+      
       details = await db.query(
         `SELECT pd.*, e.name as employee_name, e.rrn_masked, e.hire_date, e.resign_date, e.dependents_count, 
                 e.position, e.bank_name, e.account_number, e.is_dual_reporting, e.reported_salary, e.payslip_display_mode
