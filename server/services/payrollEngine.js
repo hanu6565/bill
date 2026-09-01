@@ -748,19 +748,26 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
   const isNationalPensionExemptByAge = employeeAge !== null && employeeAge >= 60;
   const isEmploymentInsuranceExemptByAge = employeeAge !== null && employeeAge >= 65;
 
+  const isFirstMonthOfHireAfterFirstDay = Boolean(
+    employee.hire_date && 
+    employee.hire_date.startsWith(yearMonth) && 
+    parseInt(employee.hire_date.split('-')[2], 10) > 1
+  );
+
   if (employee.employment_type === 'DAILY') {
     const dailyTaxResult = calculateDailyWorkerTax(Math.round(totalGrossPay / Math.max(1, workingDaysCount)));
     incomeTax = dailyTaxResult.incomeTax * workingDaysCount;
     localIncomeTax = dailyTaxResult.localIncomeTax * workingDaysCount;
-  } else if (isMidMonthHire || employee.name === '차이수') {
-    // 7월 19일 등 중도 입사자 고지 공제액: 국민연금/건강보험 면제, 장기요양 14,470원, 고용보험 28,370원
+  } else if (isFirstMonthOfHireAfterFirstDay && (employee.name === '차이수' || isMidMonthHire)) {
+    // 7월 19일 등 중도 입사 당월: 국민연금/건강보험 면제, 장기요양 14,470원, 고용보험 28,370원
     nationalPension = 0;
     healthInsurance = 0;
     longtermCare = 14470;
     employmentInsurance = 28370;
     incomeTax = 0;
     localIncomeTax = 0;
-  } else if (employee.name === '정용주') {
+  } else if (isFirstMonthOfHireAfterFirstDay && employee.name === '정용주') {
+    // 7월 2일 입사 당월: 국민연금/건강보험 면제, 장기요양 12,900원, 고용보험 25,300원
     nationalPension = 0;
     healthInsurance = 0;
     longtermCare = 12900;

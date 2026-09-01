@@ -348,27 +348,39 @@ export default function PayslipView({ stores, currentStoreId }) {
                       <tbody>
                         <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                           <td style={{ padding: '4px 6px', color: '#000000', background: '#ffffff' }}>국민연금</td>
-                          <td style={{ padding: '4px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{selectedItem.national_pension > 0 ? selectedItem.national_pension.toLocaleString() : (isJungYongJu ? '' : (isChaYiSoo ? '-' : '0'))}</td>
+                          <td style={{ padding: '4px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>
+                            {selectedItem.national_pension > 0 ? selectedItem.national_pension.toLocaleString() : (selectedItem.year_month === '2026-07' && (isJungYongJu || isChaYiSoo) ? '' : '0')}
+                          </td>
                         </tr>
                         <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                           <td style={{ padding: '4px 6px', color: '#000000', background: '#ffffff' }}>건강보험</td>
-                          <td style={{ padding: '4px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{selectedItem.health_insurance > 0 ? selectedItem.health_insurance.toLocaleString() : (isJungYongJu || isChaYiSoo ? '' : '0')}</td>
+                          <td style={{ padding: '4px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>
+                            {selectedItem.health_insurance > 0 ? selectedItem.health_insurance.toLocaleString() : (selectedItem.year_month === '2026-07' && (isJungYongJu || isChaYiSoo) ? '' : '0')}
+                          </td>
                         </tr>
                         <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                           <td style={{ padding: '4px 6px', color: '#000000', background: '#ffffff' }}>장기요양</td>
-                          <td style={{ padding: '4px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{(selectedItem.longterm_care || (isChaYiSoo ? 14470 : (isJungYongJu ? 12900 : 0))).toLocaleString()}</td>
+                          <td style={{ padding: '4px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>
+                            {(selectedItem.longterm_care || 0).toLocaleString()}
+                          </td>
                         </tr>
                         <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                           <td style={{ padding: '4px 6px', color: '#000000', background: '#ffffff' }}>고용보험</td>
-                          <td style={{ padding: '4px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{(selectedItem.employment_insurance || (isChaYiSoo ? 28370 : (isJungYongJu ? 25300 : 0))).toLocaleString()}</td>
+                          <td style={{ padding: '4px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>
+                            {(selectedItem.employment_insurance || 0).toLocaleString()}
+                          </td>
                         </tr>
                         <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                           <td style={{ padding: '4px 6px', color: '#000000', background: '#ffffff' }}>소득세</td>
-                          <td style={{ padding: '4px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{selectedItem.income_tax > 0 ? selectedItem.income_tax.toLocaleString() : (isJungYongJu || isChaYiSoo ? '' : '0')}</td>
+                          <td style={{ padding: '4px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>
+                            {selectedItem.income_tax > 0 ? selectedItem.income_tax.toLocaleString() : (selectedItem.year_month === '2026-07' && (isJungYongJu || isChaYiSoo) ? '' : '0')}
+                          </td>
                         </tr>
                         <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                           <td style={{ padding: '4px 6px', color: '#000000', background: '#ffffff' }}>지방소득세</td>
-                          <td style={{ padding: '4px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{selectedItem.local_income_tax > 0 ? selectedItem.local_income_tax.toLocaleString() : (isJungYongJu || isChaYiSoo ? '' : '0')}</td>
+                          <td style={{ padding: '4px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>
+                            {selectedItem.local_income_tax > 0 ? selectedItem.local_income_tax.toLocaleString() : (selectedItem.year_month === '2026-07' && (isJungYongJu || isChaYiSoo) ? '' : '0')}
+                          </td>
                         </tr>
                         <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                           <td style={{ padding: '4px 6px', color: '#000000', background: '#ffffff' }}>근태공제</td>
@@ -386,7 +398,9 @@ export default function PayslipView({ stores, currentStoreId }) {
                         )}
                         <tr style={{ borderTop: '1.5px solid #000000', borderBottom: '1.5px solid #000000', fontWeight: '800' }}>
                           <td style={{ padding: '6px 6px', fontWeight: '800', color: '#000000', background: '#ffffff' }}>공제합계</td>
-                          <td style={{ padding: '6px 6px', textAlign: 'right', fontWeight: '800', color: '#000000', background: '#ffffff' }}>{(selectedItem.total_deductions || (isChaYiSoo ? 42840 : (isJungYongJu ? 38200 : 0))).toLocaleString()}</td>
+                          <td style={{ padding: '6px 6px', textAlign: 'right', fontWeight: '800', color: '#000000', background: '#ffffff' }}>
+                            {(selectedItem.total_deductions || 0).toLocaleString()}
+                          </td>
                         </tr>
                       </tbody>
                     </table>
