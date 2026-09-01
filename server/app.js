@@ -7,6 +7,8 @@ import { fileURLToPath } from 'url';
 import db from './db/database.js';
 import { initHolidays } from './services/holidayService.js';
 import { runSeeds } from './db/seeds.js';
+import { pullFromSupabase } from './db/supabaseBridge.js';
+import { syncSqliteToSupabase } from './db/syncToSupabase.js';
 
 import authRoutes from './routes/auth.js';
 import storeRoutes from './routes/stores.js';
@@ -36,6 +38,10 @@ async function ensureDatabaseReady() {
       try {
         await db.initDatabase();
         await initHolidays();
+        
+        // Hydrate latest data from Supabase Cloud
+        await pullFromSupabase();
+
         const storesCount = await db.get('SELECT COUNT(*) as count FROM stores');
         if (!storesCount || storesCount.count === 0) {
           console.log('🔄 Initializing database with default seeds...');
@@ -54,6 +60,16 @@ async function ensureDatabaseReady() {
 app.use(async (req, res, next) => {
   try {
     await ensureDatabaseReady();
+
+    // Trigger asynchronous sync to Supabase on mutations
+    if (req.method === 'POST' || req.method === 'PUT' || req.method === 'DELETE') {
+      res.on('finish', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          syncSqliteToSupabase().catch(err => console.warn('Background Supabase sync notice:', err.message));
+        }
+      });
+    }
+
     next();
   } catch (err) {
     console.error('Request middleware database error:', err);
