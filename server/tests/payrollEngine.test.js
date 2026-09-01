@@ -75,7 +75,7 @@ test('3. Ordinary Wage Calculation (통상시급 산정)', () => {
   assert.equal(ordHourlyMin, 10320); // 2026 최저시급 10,320 자동 보정
 });
 
-test('4. Overtime, Night, Weekend Holiday & Public Holiday Allowances', () => {
+test('4. Overtime, Night, Weekend & Public Holiday Allowances (주말 일반/연장 & 공휴일 0.5배 가산)', () => {
   const emp = {
     id: 101,
     store_id: 1,
@@ -94,32 +94,26 @@ test('4. Overtime, Night, Weekend Holiday & Public Holiday Allowances', () => {
       regular_hours: 8,
       overtime_hours: 2,
       night_hours: 2,
-      holiday_hours_under8: 0,
-      holiday_hours_over8: 0,
       public_holiday_hours_under8: 0,
       public_holiday_hours_over8: 0
     },
-    // Weekend Holiday: 10h total (8h under8 @ 1.5x, 2h over8 @ 2.0x)
+    // Weekend: 10h total (8h regular, 2h overtime, no 1.5x weekend holiday pay)
     {
       work_date: '2026-09-05',
       net_work_hours: 10,
-      regular_hours: 0,
-      overtime_hours: 0,
+      regular_hours: 8,
+      overtime_hours: 2,
       night_hours: 0,
-      holiday_hours_under8: 8,
-      holiday_hours_over8: 2,
       public_holiday_hours_under8: 0,
       public_holiday_hours_over8: 0
     },
-    // Public Holiday: 10h total (8h under8 @ 1.5x, 2h over8 @ 2.0x)
+    // Public Holiday: 10h total (8h regular, 2h overtime + 10h @ 0.5x statutory public holiday bonus)
     {
       work_date: '2026-09-25',
       net_work_hours: 10,
-      regular_hours: 0,
-      overtime_hours: 0,
+      regular_hours: 8,
+      overtime_hours: 2,
       night_hours: 0,
-      holiday_hours_under8: 0,
-      holiday_hours_over8: 0,
       public_holiday_hours_under8: 8,
       public_holiday_hours_over8: 2
     }
@@ -127,17 +121,17 @@ test('4. Overtime, Night, Weekend Holiday & Public Holiday Allowances', () => {
 
   const payroll = calculateEmployeePayroll(emp, attendance, '2026-09', { ...DEFAULT_RATES_2026, minimumWage: 10000 });
   
-  // Overtime: 10,000 * 1.5 * 2 = 30,000
-  assert.equal(payroll.overtimeAllowance, 30000);
+  // Overtime: (2 + 2 + 2) = 6h * 10,000 * 1.5 = 90,000
+  assert.equal(payroll.overtimeAllowance, 90000);
   
   // Night: 10,000 * 0.5 * 2 = 10,000
   assert.equal(payroll.nightAllowance, 10000);
 
-  // Weekend Holiday: 10,000 * 1.5 * 8 (120,000) + 10,000 * 2.0 * 2 (40,000) = 160,000
-  assert.equal(payroll.holidayAllowance, 160000);
+  // Weekend Holiday: 0 (주말은 1.5배 별도 가산하지 않음)
+  assert.equal(payroll.holidayAllowance, 0);
 
-  // Public Holiday: 10,000 * 1.5 * 8 (120,000) + 10,000 * 2.0 * 2 (40,000) = 160,000
-  assert.equal(payroll.publicHolidayAllowance, 160000);
+  // Public Holiday: 10,000 * 0.5 * 10 = 50,000 (시급의 0.5배 가산수당)
+  assert.equal(payroll.publicHolidayAllowance, 50000);
 });
 
 test('5. Dual-Reporting Structure (이중신고구조 정밀 계산 검증)', () => {

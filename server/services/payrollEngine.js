@@ -617,8 +617,8 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
       : '연장근로수당: 해당 없음 (0원)';
 
     nightAllowance = Math.round(ordinaryHourlyWage * 0.5 * totalNightHours);
-    holidayAllowance = Math.round(ordinaryHourlyWage * (totalHolidayHoursUnder8 * 1.5 + totalHolidayHoursOver8 * 2.0));
-    publicHolidayAllowance = Math.round(ordinaryHourlyWage * (totalPubHolidayHoursUnder8 * 1.5 + totalPubHolidayHoursOver8 * 2.0));
+    holidayAllowance = 0; // 주말은 1.5배 별도 휴일근로로 중복 가산하지 않음
+    publicHolidayAllowance = Math.round(ordinaryHourlyWage * 0.5 * totalPubHolidayHours); // 법정공휴일은 시급의 0.5배 수당 가산
 
     for (const [wk, hrs] of Object.entries(weeklyHoursMap)) {
       if (hrs >= 15) {
@@ -627,6 +627,11 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
         weeklyHolidayAllowance += wkPay;
       }
     }
+  }
+
+  // 월급제/시급제 공통: 공휴일 근무가 발생한 경우 법정공휴일 0.5배 가산수당 추가
+  if (employee.wage_type === 'MONTHLY' && totalPubHolidayHours > 0 && publicHolidayAllowance === 0) {
+    publicHolidayAllowance = Math.round(ordinaryHourlyWage * 0.5 * totalPubHolidayHours);
   }
 
   // 지급합계 (A)
@@ -813,9 +818,9 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
     overtimeAllowance2,
     overtimeExplanation2,
     overtimeExplanation: overtimeExplanation1 || overtimeExplanation2 || '',
-    nightExplanation: '',
-    holidayExplanation: '',
-    pubHolidayExplanation: '',
+    nightExplanation: totalNightHours > 0 ? `야간근로수당 (0.5배): ${totalNightHours}시간 x ${ordinaryHourlyWage.toLocaleString()}원 x 0.5 = ${nightAllowance.toLocaleString()}원` : '해당 없음 (0원)',
+    holidayExplanation: '해당 없음 (주말 정규 근무 산정)',
+    pubHolidayExplanation: totalPubHolidayHours > 0 ? `법정공휴일 가산수당 (0.5배): ${totalPubHolidayHours}시간 x ${ordinaryHourlyWage.toLocaleString()}원 x 0.5 = ${publicHolidayAllowance.toLocaleString()}원` : '해당 없음 (0원)',
     annualLeaveHours,
     annualLeaveAllowance,
     annualLeaveExplanation,

@@ -353,6 +353,23 @@ export async function initDatabase() {
     if (!rNames.includes('snapshot_rates')) await exec("ALTER TABLE payroll_runs ADD COLUMN snapshot_rates TEXT;");
     if (!rNames.includes('reopened_at')) await exec("ALTER TABLE payroll_runs ADD COLUMN reopened_at DATETIME;");
     if (!rNames.includes('reopened_reason')) await exec("ALTER TABLE payroll_runs ADD COLUMN reopened_reason TEXT;");
+
+    // Clean up any legacy weekend 1.5x holiday hours in attendance records
+    try {
+      await exec(`
+        UPDATE attendance 
+        SET regular_hours = MIN(8.0, net_work_hours),
+            overtime_hours = MAX(0.0, net_work_hours - 8.0),
+            holiday_hours = 0,
+            holiday_hours_under8 = 0,
+            holiday_hours_over8 = 0,
+            day_type = CASE 
+              WHEN strftime('%w', work_date) IN ('0', '6') THEN 'WEEKEND' 
+              ELSE 'REGULAR' 
+            END
+        WHERE net_work_hours > 0 AND (day_type = 'WEEKEND_HOLIDAY' OR holiday_hours_under8 > 0 OR holiday_hours_over8 > 0);
+      `);
+    } catch (e) {}
   } catch (e) {
     console.error('Migration error:', e);
   }

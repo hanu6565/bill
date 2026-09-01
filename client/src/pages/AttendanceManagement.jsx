@@ -430,14 +430,7 @@ export default function AttendanceManagement({ stores, currentStoreId, setCurren
             </div>
 
             <div style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
-              <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>주말휴일근로 (1.5x/2x)</div>
-              <div style={{ fontSize: '18px', fontWeight: '700', color: '#ec4899', marginTop: '2px' }} className="num-font">
-                {Math.round(totalHolidayHours * 10) / 10}h
-              </div>
-            </div>
-
-            <div style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
-              <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>공휴일근로 (1.5x/2x)</div>
+              <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>공휴일근로 (0.5x 가산)</div>
               <div style={{ fontSize: '18px', fontWeight: '700', color: '#ef4444', marginTop: '2px' }} className="num-font">
                 {Math.round(totalPubHolidayHours * 10) / 10}h
               </div>
@@ -530,12 +523,7 @@ export default function AttendanceManagement({ stores, currentStoreId, setCurren
                         )}
                         {att.day_type === 'PUBLIC_HOLIDAY' && (
                           <span className="badge badge-danger" style={{ fontSize: '9px', padding: '1px 4px' }}>
-                            공휴일
-                          </span>
-                        )}
-                        {att.day_type === 'WEEKEND_HOLIDAY' && (
-                          <span className="badge badge-warning" style={{ fontSize: '9px', padding: '1px 4px' }}>
-                            주말
+                            공휴(0.5x)
                           </span>
                         )}
                       </div>

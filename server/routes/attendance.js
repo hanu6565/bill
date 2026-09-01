@@ -62,28 +62,24 @@ export async function calculateDayHours(workDate, clockIn, clockOut, breakMinute
   const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
 
   let dayType = 'REGULAR';
-  let regularHours = 0;
-  let overtimeHours = 0;
+  let regularHours = Math.min(8.0, netHours);
+  let overtimeHours = Math.max(0.0, netHours - 8.0);
   let holidayHoursUnder8 = 0;
   let holidayHoursOver8 = 0;
   let pubHolidayHoursUnder8 = 0;
   let pubHolidayHoursOver8 = 0;
 
   if (isPubHol) {
-    // Statutory Public holiday work (prioritized over weekend)
+    // Statutory Public holiday work (법정공휴일 근로: 시급 0.5x 가산수당 대상)
     dayType = 'PUBLIC_HOLIDAY';
     pubHolidayHoursUnder8 = Math.min(8.0, netHours);
     pubHolidayHoursOver8 = Math.max(0.0, netHours - 8.0);
   } else if (isWeekend) {
-    // Weekend holiday work
-    dayType = 'WEEKEND_HOLIDAY';
-    holidayHoursUnder8 = Math.min(8.0, netHours);
-    holidayHoursOver8 = Math.max(0.0, netHours - 8.0);
+    // Weekend is regular schedule in restaurants: 8h regular + >8h overtime (1.5x)
+    dayType = 'WEEKEND';
   } else {
     // Regular weekday
     dayType = 'REGULAR';
-    regularHours = Math.min(8.0, netHours);
-    overtimeHours = Math.max(0.0, netHours - 8.0);
   }
 
   return {
