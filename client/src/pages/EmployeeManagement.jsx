@@ -150,6 +150,7 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
     ins_work_accident: 1,
     deduct_income_tax: 1,
     deduct_local_tax: 1,
+    fixed_national_pension: 0,
     ordinary_wage_items: ['basic_pay']
   });
 
@@ -225,6 +226,7 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
       ins_work_accident: 1,
       deduct_income_tax: 1,
       deduct_local_tax: 1,
+      fixed_national_pension: 0,
       ordinary_wage_items: ['basic_pay']
     });
     setIsModalOpen(true);
@@ -274,6 +276,7 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
       ins_work_accident: emp.ins_work_accident !== undefined ? emp.ins_work_accident : 1,
       deduct_income_tax: emp.deduct_income_tax !== undefined ? emp.deduct_income_tax : (emp.tax_exempt_income_tax !== undefined ? emp.tax_exempt_income_tax : 1),
       deduct_local_tax: emp.deduct_local_tax !== undefined ? emp.deduct_local_tax : 1,
+      fixed_national_pension: emp.fixed_national_pension || 0,
       ordinary_wage_items: typeof emp.ordinary_wage_items === 'string' ? JSON.parse(emp.ordinary_wage_items || '["basic_pay"]') : (emp.ordinary_wage_items || ['basic_pay'])
     });
     setIsModalOpen(true);
@@ -1145,6 +1148,40 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
                           </span>
                         )}
                       </div>
+
+                      {/* 국민연금 결정세액/결정고지금액 입력란 */}
+                      {formData.ins_national_pension === 1 && (
+                        <div style={{ marginTop: '10px', padding: '10px 12px', background: 'rgba(59, 130, 246, 0.08)', borderRadius: '6px', border: '1px solid rgba(59, 130, 246, 0.25)', marginLeft: '24px' }}>
+                          <label style={{ fontSize: '12px', fontWeight: '700', color: '#93c5fd', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                            🏢 국민연금 결정고지금액 (선택사항)
+                          </label>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <input
+                              type="number"
+                              className="form-input"
+                              style={{ width: '180px', padding: '6px 10px', fontSize: '13px', background: 'var(--bg-surface-elevated)', color: '#fff', border: '1px solid rgba(147, 197, 253, 0.4)' }}
+                              placeholder="미입력 시 자동계산"
+                              value={formData.fixed_national_pension ? formData.fixed_national_pension : ''}
+                              onChange={(e) => setFormData({ ...formData, fixed_national_pension: parseInt(e.target.value, 10) || 0 })}
+                            />
+                            <span style={{ fontSize: '12.5px', color: '#cbd5e1', fontWeight: '600' }}>원</span>
+                            {formData.fixed_national_pension > 0 && (
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-ghost"
+                                style={{ fontSize: '11px', padding: '2px 8px', color: '#f87171' }}
+                                onClick={() => setFormData({ ...formData, fixed_national_pension: 0 })}
+                              >
+                                초기화 (자동계산)
+                              </button>
+                            )}
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '5px', lineHeight: '1.4' }}>
+                            * 공단 고지 결정세액을 입력하면 해당 금액이 <strong>우선 고정 공제</strong>되며, <strong>미입력(0원) 시 지급합계(과세급여) 기준 4.5%로 매월 자동 계산</strong>됩니다.
+                          </div>
+                        </div>
+                      )}
+
                       {isPensionExempt && (
                         <div style={{ fontSize: '11.5px', color: '#fbbf24', marginTop: '6px', paddingLeft: '24px' }}>
                           💡 만 60세 이상은 국민연금 의무가입 대상에서 제외됩니다. (체크 해제 시 연금보험료 0원 처리)

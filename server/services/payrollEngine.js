@@ -774,60 +774,57 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
     employmentInsurance = 25300;
     incomeTax = 0;
     localIncomeTax = 0;
-  } else if (isMorningShift) {
-    nationalPension = isNationalPensionExemptByAge ? 0 : 71250;
-    healthInsurance = 70400;
-    longtermCare = 9110;
-    employmentInsurance = isEmploymentInsuranceExemptByAge ? 0 : 17870;
-    incomeTax = 18880;
-    localIncomeTax = 1880;
   } else {
-    if (employee.is_dual_reporting === 1 && reportedBase <= 2200000 && ordinaryHourlyWage === 10320) {
-      nationalPension = isNationalPensionExemptByAge ? 0 : 99750;
-      healthInsurance = 79380;
-      longtermCare = 10270;
-      employmentInsurance = isEmploymentInsuranceExemptByAge ? 0 : 20150;
-      incomeTax = 26910;
-      localIncomeTax = 2690;
-      reportedBase = 2156880;
-    } else if (employee.is_dual_reporting === 1 && (reportedBase >= 2000000 && reportedBase <= 2200000)) {
-      nationalPension = isNationalPensionExemptByAge ? 0 : 90250;
-      healthInsurance = 72290;
-      longtermCare = 9360;
-      employmentInsurance = isEmploymentInsuranceExemptByAge ? 0 : 18350;
-      incomeTax = 15370;
-      localIncomeTax = 1530;
-      reportedBase = 2156930;
-    } else if (employee.is_dual_reporting === 0 && reportedBase >= 3500000) {
-      nationalPension = isNationalPensionExemptByAge ? 0 : 147250;
-      healthInsurance = 129410;
-      longtermCare = 16750;
-      employmentInsurance = isEmploymentInsuranceExemptByAge ? 0 : 32850;
-      incomeTax = 60290;
-      localIncomeTax = 6020;
+    // 1) 국민연금: 만 60세 면제 or 미가입(0원) or 결정고지금액 입력 시 해당 금액 or 미입력 시 지급합계(과세소득) 기준 4.5% 자동 공제
+    if (employee.tax_exempt_social_ins !== 0 && employee.ins_national_pension !== 0) {
+      if (isNationalPensionExemptByAge) {
+        nationalPension = 0;
+      } else if (employee.fixed_national_pension && employee.fixed_national_pension > 0) {
+        nationalPension = employee.fixed_national_pension;
+      } else {
+        const npBase = Math.min(Math.max(reportedBase, rates.nationalPensionMin || 390000), rates.nationalPensionMax || 6170000);
+        nationalPension = Math.floor((npBase * (rates.nationalPension || 0.045)) / 10) * 10;
+      }
     } else {
-      if (employee.tax_exempt_social_ins !== 0) {
-        if (!isNationalPensionExemptByAge) {
-          const npBase = Math.min(Math.max(reportedBase, rates.nationalPensionMin || 390000), rates.nationalPensionMax || 6170000);
-          nationalPension = Math.floor((npBase * (rates.nationalPension || 0.045)) / 10) * 10;
-        } else {
-          nationalPension = 0;
-        }
+      nationalPension = 0;
+    }
 
-        healthInsurance = Math.floor((reportedBase * (rates.healthInsurance || 0.03545)) / 10) * 10;
-        longtermCare = Math.floor((healthInsurance * (rates.longtermCareRateOfHealth || 0.1295)) / 10) * 10;
+    // 2) 건강보험: 지급합계(과세소득 / reportedBase) 기준 3.545%
+    if (employee.tax_exempt_social_ins !== 0 && employee.ins_health !== 0) {
+      healthInsurance = Math.floor((reportedBase * (rates.healthInsurance || 0.03545)) / 10) * 10;
+    } else {
+      healthInsurance = 0;
+    }
 
-        if (!isEmploymentInsuranceExemptByAge) {
-          employmentInsurance = Math.floor((reportedBase * (rates.employmentInsurance || 0.009)) / 10) * 10;
-        } else {
-          employmentInsurance = 0;
-        }
+    // 3) 장기요양보험: 건강보험료의 12.95%
+    if (employee.tax_exempt_social_ins !== 0 && employee.ins_health !== 0 && employee.ins_longterm_care !== 0) {
+      longtermCare = Math.floor((healthInsurance * (rates.longtermCareRateOfHealth || 0.1295)) / 10) * 10;
+    } else {
+      longtermCare = 0;
+    }
+
+    // 4) 고용보험: 지급합계(과세소득 / reportedBase) 기준 0.9% (만 65세 이상 실업급여 제외)
+    if (employee.tax_exempt_social_ins !== 0 && employee.ins_employment !== 0) {
+      if (!isEmploymentInsuranceExemptByAge) {
+        employmentInsurance = Math.floor((reportedBase * (rates.employmentInsurance || 0.009)) / 10) * 10;
+      } else {
+        employmentInsurance = 0;
       }
+    } else {
+      employmentInsurance = 0;
+    }
 
-      if (employee.tax_exempt_income_tax !== 0) {
-        incomeTax = calculateIncomeTax(reportedBase, employee.dependents_count || 1);
+    // 5) 소득세 & 지방소득세: 지급합계(과세소득 / reportedBase) 및 부양가족 수 기준 간이세액표 동적 산출
+    if (employee.tax_exempt_income_tax !== 0 && employee.deduct_income_tax !== 0) {
+      incomeTax = calculateIncomeTax(reportedBase, employee.dependents_count || 1);
+      if (employee.deduct_local_tax !== 0) {
         localIncomeTax = Math.floor((incomeTax * 0.10) / 10) * 10;
+      } else {
+        localIncomeTax = 0;
       }
+    } else {
+      incomeTax = 0;
+      localIncomeTax = 0;
     }
   }
 

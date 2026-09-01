@@ -152,6 +152,7 @@ export async function initDatabase() {
       ins_work_accident INTEGER DEFAULT 1,
       deduct_income_tax INTEGER DEFAULT 1,
       deduct_local_tax INTEGER DEFAULT 1,
+      fixed_national_pension INTEGER DEFAULT 0,
       ordinary_wage_items TEXT,
       payslip_display_mode TEXT DEFAULT 'STANDARD',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -338,6 +339,7 @@ export async function initDatabase() {
     if (!eNames.includes('ins_work_accident')) await exec("ALTER TABLE employees ADD COLUMN ins_work_accident INTEGER DEFAULT 1;");
     if (!eNames.includes('deduct_income_tax')) await exec("ALTER TABLE employees ADD COLUMN deduct_income_tax INTEGER DEFAULT 1;");
     if (!eNames.includes('deduct_local_tax')) await exec("ALTER TABLE employees ADD COLUMN deduct_local_tax INTEGER DEFAULT 1;");
+    if (!eNames.includes('fixed_national_pension')) await exec("ALTER TABLE employees ADD COLUMN fixed_national_pension INTEGER DEFAULT 0;");
     if (!eNames.includes('ordinary_wage_items')) await exec("ALTER TABLE employees ADD COLUMN ordinary_wage_items TEXT;");
     if (!eNames.includes('payslip_display_mode')) await exec("ALTER TABLE employees ADD COLUMN payslip_display_mode TEXT DEFAULT 'STANDARD';");
 

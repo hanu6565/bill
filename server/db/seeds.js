@@ -41,42 +41,42 @@ export async function runSeeds() {
       dependents_count: 2, is_foreigner: 0, visa_type: null, employment_type: 'REGULAR', wage_type: 'MONTHLY',
       contract_salary: 3600000, hourly_wage: 11229, fixed_work_hours: '10:00~22:00', bank_name: '대구은행', account_number: '508-12-345678',
       has_car: 1, is_dual_reporting: 1, reported_salary: 2156880, probation_applicable: 0, probation_rate: 90.0,
-      non_taxable_meal: 0, non_taxable_car: 1, non_taxable_overtime: 0
+      non_taxable_meal: 0, non_taxable_car: 1, non_taxable_overtime: 0, fixed_national_pension: 90250
     },
     {
       id: 2, store_id: 1, name: '김성훈', rrn: '770315-1823045', hire_date: '2025-12-24', position: '과장',
       dependents_count: 4, is_foreigner: 0, visa_type: null, employment_type: 'REGULAR', wage_type: 'MONTHLY',
       contract_salary: 3600000, hourly_wage: 11229, fixed_work_hours: '10:00~22:00', bank_name: '국민은행', account_number: '456-78-901234',
       has_car: 1, is_dual_reporting: 0, reported_salary: 3850530, probation_applicable: 0, probation_rate: 90.0,
-      non_taxable_meal: 0, non_taxable_car: 1, non_taxable_overtime: 0
+      non_taxable_meal: 0, non_taxable_car: 1, non_taxable_overtime: 0, fixed_national_pension: 147250
     },
     {
       id: 3, store_id: 1, name: '김혜숙', rrn: '660824-2525110', hire_date: '2025-11-01', position: '사원',
       dependents_count: 1, is_foreigner: 0, visa_type: null, employment_type: 'REGULAR', wage_type: 'MONTHLY',
       contract_salary: 3260000, hourly_wage: 10320, fixed_work_hours: '10:00~22:00', bank_name: '우리은행', account_number: '1002-345-678901',
       has_car: 0, is_dual_reporting: 1, reported_salary: 2156880, probation_applicable: 0, probation_rate: 90.0,
-      non_taxable_meal: 0, non_taxable_car: 0, non_taxable_overtime: 0
+      non_taxable_meal: 0, non_taxable_car: 0, non_taxable_overtime: 0, fixed_national_pension: 99750
     },
     {
       id: 4, store_id: 1, name: '김순자', rrn: '670119-2330927', hire_date: '2025-11-10', position: '사원',
       dependents_count: 1, is_foreigner: 0, visa_type: null, employment_type: 'REGULAR', wage_type: 'MONTHLY',
       contract_salary: 1986020, hourly_wage: 10320, fixed_work_hours: '10:00~15:00', bank_name: '하나은행', account_number: '234-910234-56789',
       has_car: 0, is_dual_reporting: 0, reported_salary: 1986020, probation_applicable: 0, probation_rate: 90.0,
-      non_taxable_meal: 0, non_taxable_car: 0, non_taxable_overtime: 0
+      non_taxable_meal: 0, non_taxable_car: 0, non_taxable_overtime: 0, fixed_national_pension: 71250
     },
     {
       id: 5, store_id: 1, name: '정용주', rrn: '730725-1526520', hire_date: '2026-07-02', position: '수습 사원',
       dependents_count: 3, is_foreigner: 0, visa_type: null, employment_type: 'REGULAR', wage_type: 'MONTHLY',
       contract_salary: 3011782, hourly_wage: 9288, fixed_work_hours: '10:00~22:00', bank_name: '카카오뱅크', account_number: '3333-01-9283741',
       has_car: 1, is_dual_reporting: 0, reported_salary: 0, probation_applicable: 1, probation_rate: 90.0,
-      non_taxable_meal: 0, non_taxable_car: 1, non_taxable_overtime: 0
+      non_taxable_meal: 0, non_taxable_car: 1, non_taxable_overtime: 0, fixed_national_pension: 147250
     },
     {
       id: 6, store_id: 1, name: '차이수', rrn: '650420-2772829', hire_date: '2026-07-19', position: '수습 사원',
       dependents_count: 1, is_foreigner: 0, visa_type: null, employment_type: 'REGULAR', wage_type: 'MONTHLY',
       contract_salary: 3011782, hourly_wage: 9288, fixed_work_hours: '09:00~21:00', bank_name: '토스뱅크', account_number: '1000-0192-8374',
       has_car: 0, is_dual_reporting: 0, reported_salary: 0, probation_applicable: 1, probation_rate: 90.0,
-      non_taxable_meal: 0, non_taxable_car: 0, non_taxable_overtime: 0
+      non_taxable_meal: 0, non_taxable_car: 0, non_taxable_overtime: 0, fixed_national_pension: 0
     }
   ];
 
@@ -94,14 +94,14 @@ export async function runSeeds() {
         dependents_count, is_foreigner, visa_type, employment_type, wage_type,
         contract_salary, hourly_wage, fixed_work_hours, bank_name, account_number,
         has_car, is_dual_reporting, reported_salary, probation_applicable, probation_rate,
-        non_taxable_meal, non_taxable_car, non_taxable_overtime
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        non_taxable_meal, non_taxable_car, non_taxable_overtime, fixed_national_pension
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         emp.id, emp.store_id, emp.name, rrnEnc, rrnMsk, '010-0000-0000', emp.position, emp.hire_date,
         emp.dependents_count, emp.is_foreigner, emp.visa_type, emp.employment_type, emp.wage_type,
         emp.contract_salary, emp.hourly_wage, emp.fixed_work_hours, emp.bank_name, emp.account_number,
         emp.has_car, emp.is_dual_reporting, emp.reported_salary, emp.probation_applicable, emp.probation_rate,
-        emp.non_taxable_meal, emp.non_taxable_car, emp.non_taxable_overtime
+        emp.non_taxable_meal, emp.non_taxable_car, emp.non_taxable_overtime, emp.fixed_national_pension || 0
       ]
     );
   }

@@ -74,7 +74,7 @@ router.post('/', async (req, res) => {
       contract_duration_type, is_simple_labor, probation_applicable, probation_start_date, probation_end_date, probation_rate,
       non_taxable_meal, non_taxable_car, non_taxable_overtime, tax_exempt_income_tax, tax_exempt_social_ins,
       ins_national_pension, ins_health, ins_longterm_care, ins_employment, ins_work_accident,
-      deduct_income_tax, deduct_local_tax,
+      deduct_income_tax, deduct_local_tax, fixed_national_pension,
       ordinary_wage_items
     } = req.body;
 
@@ -107,7 +107,7 @@ router.post('/', async (req, res) => {
         contract_duration_type, is_simple_labor, probation_applicable, probation_start_date, probation_end_date, probation_rate,
         non_taxable_meal, non_taxable_car, non_taxable_overtime, tax_exempt_income_tax, tax_exempt_social_ins,
         ins_national_pension, ins_health, ins_longterm_care, ins_employment, ins_work_accident,
-        deduct_income_tax, deduct_local_tax,
+        deduct_income_tax, deduct_local_tax, fixed_national_pension,
         ordinary_wage_items
       ) VALUES (
         ?, ?, ?, ?, ?, ?, ?, ?,
@@ -117,7 +117,7 @@ router.post('/', async (req, res) => {
         ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?,
-        ?, ?,
+        ?, ?, ?,
         ?
       )`,
       [
@@ -134,6 +134,7 @@ router.post('/', async (req, res) => {
         ins_work_accident !== undefined ? (ins_work_accident ? 1 : 0) : 1,
         deduct_income_tax !== undefined ? (deduct_income_tax ? 1 : 0) : 1,
         deduct_local_tax !== undefined ? (deduct_local_tax ? 1 : 0) : 1,
+        fixed_national_pension ? parseInt(fixed_national_pension, 10) : 0,
         ordinary_wage_items ? JSON.stringify(ordinary_wage_items) : '["basic_pay"]'
       ]
     );
@@ -205,6 +206,8 @@ router.put('/:id', async (req, res) => {
       is_dual_reporting, reported_salary, withholding_rate, payslip_display_mode,
       contract_duration_type, is_simple_labor, probation_applicable, probation_start_date, probation_end_date, probation_rate,
       non_taxable_meal, non_taxable_car, non_taxable_overtime, tax_exempt_income_tax, tax_exempt_social_ins,
+      ins_national_pension, ins_health, ins_longterm_care, ins_employment, ins_work_accident,
+      deduct_income_tax, deduct_local_tax, fixed_national_pension,
       ordinary_wage_items
     } = req.body;
 
@@ -251,6 +254,7 @@ router.put('/:id', async (req, res) => {
     const targetIsDual = is_dual_reporting !== undefined ? (is_dual_reporting ? 1 : 0) : existing.is_dual_reporting;
     const targetReportedSalary = reported_salary !== undefined ? reported_salary : existing.reported_salary;
     const targetWithholdingRate = withholding_rate !== undefined ? withholding_rate : existing.withholding_rate;
+    const targetDisplayMode = payslip_display_mode !== undefined ? payslip_display_mode : existing.payslip_display_mode;
     const targetInsNP = ins_national_pension !== undefined ? (ins_national_pension ? 1 : 0) : (existing.ins_national_pension !== undefined ? existing.ins_national_pension : 1);
     const targetInsHI = ins_health !== undefined ? (ins_health ? 1 : 0) : (existing.ins_health !== undefined ? existing.ins_health : 1);
     const targetInsLTC = ins_longterm_care !== undefined ? (ins_longterm_care ? 1 : 0) : (existing.ins_longterm_care !== undefined ? existing.ins_longterm_care : 1);
@@ -258,6 +262,7 @@ router.put('/:id', async (req, res) => {
     const targetInsWA = ins_work_accident !== undefined ? (ins_work_accident ? 1 : 0) : (existing.ins_work_accident !== undefined ? existing.ins_work_accident : 1);
     const targetDeductIT = deduct_income_tax !== undefined ? (deduct_income_tax ? 1 : 0) : (existing.deduct_income_tax !== undefined ? existing.deduct_income_tax : 1);
     const targetDeductLT = deduct_local_tax !== undefined ? (deduct_local_tax ? 1 : 0) : (existing.deduct_local_tax !== undefined ? existing.deduct_local_tax : 1);
+    const targetFixedNP = fixed_national_pension !== undefined ? (parseInt(fixed_national_pension, 10) || 0) : (existing.fixed_national_pension || 0);
 
     await db.run(
       `UPDATE employees SET
@@ -268,7 +273,7 @@ router.put('/:id', async (req, res) => {
         contract_duration_type = ?, is_simple_labor = ?, probation_applicable = ?, probation_start_date = ?, probation_end_date = ?, probation_rate = ?,
         non_taxable_meal = ?, non_taxable_car = ?, non_taxable_overtime = ?, tax_exempt_income_tax = ?, tax_exempt_social_ins = ?,
         ins_national_pension = ?, ins_health = ?, ins_longterm_care = ?, ins_employment = ?, ins_work_accident = ?,
-        deduct_income_tax = ?, deduct_local_tax = ?,
+        deduct_income_tax = ?, deduct_local_tax = ?, fixed_national_pension = ?,
         ordinary_wage_items = ?, updated_at = CURRENT_TIMESTAMP
        WHERE id = ?`,
       [
@@ -279,7 +284,7 @@ router.put('/:id', async (req, res) => {
         contract_duration_type || existing.contract_duration_type || 'ONE_YEAR_OR_MORE', is_simple_labor !== undefined ? (is_simple_labor ? 1 : 0) : existing.is_simple_labor, finalProbationApplicable, probation_start_date || existing.probation_start_date, probation_end_date || existing.probation_end_date, probation_rate || existing.probation_rate,
         non_taxable_meal !== undefined ? (non_taxable_meal ? 1 : 0) : existing.non_taxable_meal, non_taxable_car !== undefined ? (non_taxable_car ? 1 : 0) : existing.non_taxable_car, non_taxable_overtime !== undefined ? (non_taxable_overtime ? 1 : 0) : existing.non_taxable_overtime, tax_exempt_income_tax !== undefined ? (tax_exempt_income_tax ? 1 : 0) : existing.tax_exempt_income_tax, tax_exempt_social_ins !== undefined ? (tax_exempt_social_ins ? 1 : 0) : existing.tax_exempt_social_ins,
         targetInsNP, targetInsHI, targetInsLTC, targetInsEI, targetInsWA,
-        targetDeductIT, targetDeductLT,
+        targetDeductIT, targetDeductLT, targetFixedNP,
         ordinary_wage_items ? JSON.stringify(ordinary_wage_items) : (existing.ordinary_wage_items || '["basic_pay"]'),
         req.params.id
       ]
