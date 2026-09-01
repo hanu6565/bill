@@ -576,10 +576,14 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
         attendanceBonus = 0;
       }
 
-      const baseSubHours = 9.0;
-      substituteHours = baseSubHours + totalOtherHolidayHours;
+      // 가산수당에는 기본급(1.0배)을 중복 산입하지 않고, 순수 추가 가산되는 시간(0.5배)만 반영
+      substituteHours = totalOtherHolidayHours > 0 
+        ? totalOtherHolidayHours 
+        : (additionalAllowances.substitute_hours !== undefined ? additionalAllowances.substitute_hours : (yearMonth === '2026-07' ? 9.0 : 0));
       substituteAllowance = Math.round(substituteHours * ordinaryHourlyWage * 0.5);
-      substituteExplanation = `${substituteHours}시간 x ${ordinaryHourlyWage.toLocaleString()}원 x 0.5`;
+      substituteExplanation = substituteHours > 0 
+        ? `${substituteHours}시간 x ${ordinaryHourlyWage.toLocaleString()}원 x 0.5` 
+        : '해당 없음';
 
       if (ordinaryHourlyWage === 10320) {
         basicPay = 2156880;
