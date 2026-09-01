@@ -269,10 +269,6 @@ export default function PayslipView({ stores, currentStoreId }) {
                               <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>0</td>
                             </tr>
                             <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                              <td style={{ padding: '5px 6px', color: '#000000', background: '#ffffff' }}>공휴일근로수당</td>
-                              <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>0</td>
-                            </tr>
-                            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                               <td style={{ padding: '5px 6px', color: '#000000', background: '#ffffff' }}>연장근로수당 ①</td>
                               <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>0</td>
                             </tr>
@@ -307,12 +303,6 @@ export default function PayslipView({ stores, currentStoreId }) {
                                 <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{bonusPay.toLocaleString()}</td>
                               </tr>
                             )}
-                            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                              <td style={{ padding: '5px 6px', color: '#000000', background: '#ffffff' }}>공휴일근로수당</td>
-                              <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>
-                                {pubHolidayPay > 0 ? pubHolidayPay.toLocaleString() : ''}
-                              </td>
-                            </tr>
                             <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                               <td style={{ padding: '5px 6px', color: '#000000', background: '#ffffff' }}>연장근로수당 ①</td>
                               <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{ot1 > 0 ? ot1.toLocaleString() : ''}</td>
@@ -471,12 +461,6 @@ export default function PayslipView({ stores, currentStoreId }) {
                           <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                             <td style={{ padding: '3px 6px', fontWeight: '700', color: '#000000', background: '#ffffff' }}>대체근로수당</td>
                             <td style={{ padding: '3px 6px', color: '#000000', background: '#ffffff' }}>{breakdown.substituteExplanation || '9시간 x 11,229원 x 0.5'}</td>
-                          </tr>
-                          <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                            <td style={{ padding: '3px 6px', fontWeight: '700', color: '#000000', background: '#ffffff' }}>공휴일근로수당</td>
-                            <td style={{ padding: '3px 6px', color: '#000000', background: '#ffffff' }}>
-                              {pubHolidayPay > 0 ? (breakdown.pubHolidayExplanation || `공휴일근로수당: ${pubHolidayPay.toLocaleString()}원`) : ''}
-                            </td>
                           </tr>
                           <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                             <td style={{ padding: '3px 6px', fontWeight: '700', color: '#000000', background: '#ffffff' }}>근태공제</td>
