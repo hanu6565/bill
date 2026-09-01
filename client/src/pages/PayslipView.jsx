@@ -305,9 +305,9 @@ export default function PayslipView({ stores, currentStoreId }) {
                                 <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{bonusPay.toLocaleString()}</td>
                               </tr>
                             )}
-                            {(isKimHoon || isJungYongJu || pubHolidayPay > 0) && (
+                            {pubHolidayPay > 0 && (
                               <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                <td style={{ padding: '5px 6px', color: '#000000', background: '#ffffff' }}>공휴일근로수당</td>
+                                <td style={{ padding: '5px 6px', color: '#000000', background: '#ffffff' }}>공휴일근로수당 (5/1)</td>
                                 <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{pubHolidayPay.toLocaleString()}</td>
                               </tr>
                             )}
@@ -535,10 +535,10 @@ export default function PayslipView({ stores, currentStoreId }) {
                             <td style={{ padding: '5px 8px', fontWeight: '700', color: '#000000', background: '#ffffff' }}>대체근로수당</td>
                             <td style={{ padding: '5px 8px', color: '#000000', background: '#ffffff' }}>{breakdown.substituteExplanation || (isKimSoonJa ? '4.5시간 x 통상시급 x 0.5' : (isKimHyeSook || isJungYongJu ? '9시간 x 통상시급 x 0.5' : '9시간 x 통상시급 x 0.5'))}</td>
                           </tr>
-                          {(isKimHoon || isKimSoonJa || isJungYongJu || pubHolidayPay > 0) && (
+                          {pubHolidayPay > 0 && (
                             <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                               <td style={{ padding: '5px 8px', fontWeight: '700', color: '#000000', background: '#ffffff' }}>공휴일근로수당</td>
-                              <td style={{ padding: '5px 8px', color: '#000000', background: '#ffffff' }}>{pubHolidayPay > 0 ? `공휴일근로수당: ${pubHolidayPay.toLocaleString()}원` : '해당 없음'}</td>
+                              <td style={{ padding: '5px 8px', color: '#000000', background: '#ffffff' }}>{breakdown.pubHolidayExplanation || `공휴일근로수당: ${pubHolidayPay.toLocaleString()}원`}</td>
                             </tr>
                           )}
                           <tr style={{ borderBottom: '1px solid #f1f5f9' }}>

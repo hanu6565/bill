@@ -353,6 +353,8 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
   let totalPubHolidayHours = 0;
   let totalPubHolidayHoursUnder8 = 0;
   let totalPubHolidayHoursOver8 = 0;
+  let totalLaborDayHours = 0; // 5월 1일 근로자의 날
+  let totalOtherHolidayHours = 0; // 5월 1일 제외 나머지 모든 공휴일(대체공휴일) 근무시간
   let absentDays = 0;
   let unpaidLeaveDays = 0;
   let annualLeaveDays = 0;
@@ -391,9 +393,20 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
 
       const phUnder8 = att.public_holiday_hours_under8 !== undefined ? (att.public_holiday_hours_under8 || 0) : (att.public_holiday_hours || 0);
       const phOver8 = att.public_holiday_hours_over8 || 0;
+      const phTotal = phUnder8 + phOver8;
+
+      const isLaborDay = (att.work_date && att.work_date.endsWith('-05-01')) || (att.holiday_name && att.holiday_name.includes('근로자의 날'));
+      const isHolidayDate = (att.is_holiday === 1 || att.is_public_holiday === 1 || phTotal > 0);
+
+      if (isLaborDay && (phTotal > 0 || isHolidayDate)) {
+        totalLaborDayHours += (phTotal > 0 ? phTotal : netHrs);
+      } else if (isHolidayDate) {
+        totalOtherHolidayHours += (phTotal > 0 ? phTotal : netHrs);
+      }
+
       totalPubHolidayHoursUnder8 += phUnder8;
       totalPubHolidayHoursOver8 += phOver8;
-      totalPubHolidayHours += (phUnder8 + phOver8);
+      totalPubHolidayHours += phTotal;
 
       const d = new Date(att.work_date);
       const dayOfWeek = d.getDay();
@@ -563,18 +576,12 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
         attendanceBonus = 0;
       }
 
-      if (additionalAllowances.substitute_allowance !== undefined) {
-        substituteAllowance = additionalAllowances.substitute_allowance;
-        substituteHours = additionalAllowances.substitute_hours || 9;
-      } else {
-        substituteHours = 9.0;
-        if (ordinaryHourlyWage === 10320) {
-          substituteAllowance = 46440;
-        } else {
-          substituteAllowance = 50531;
-        }
-      }
-      substituteExplanation = `${substituteHours}시간 x ${ordinaryHourlyWage.toLocaleString()}원 x 0.5`;
+      const baseSubHours = 9.0;
+      substituteHours = baseSubHours + totalOtherHolidayHours;
+      substituteAllowance = Math.round(substituteHours * ordinaryHourlyWage * 0.5);
+      substituteExplanation = totalOtherHolidayHours > 0 
+        ? `${substituteHours}시간 (기본 9h + 공휴일대체 ${totalOtherHolidayHours}h) x ${ordinaryHourlyWage.toLocaleString()}원 x 0.5`
+        : `${substituteHours}시간 x ${ordinaryHourlyWage.toLocaleString()}원 x 0.5`;
 
       if (ordinaryHourlyWage === 10320) {
         basicPay = 2156880;
@@ -614,9 +621,9 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
       attendanceBonus = 0;
     }
 
-    substituteHours = 4.5;
-    substituteAllowance = 23220;
-    substituteExplanation = '4.5시간 x 통상시급 x 0.5';
+    substituteHours = 4.5 + totalOtherHolidayHours;
+    substituteAllowance = Math.round(substituteHours * ordinaryHourlyWage * 0.5);
+    substituteExplanation = `${substituteHours}시간 x ${ordinaryHourlyWage.toLocaleString()}원 x 0.5`;
 
     overtimeHours1 = 0;
     overtimeAllowance1 = 0;
@@ -654,7 +661,14 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
 
     nightAllowance = Math.round(ordinaryHourlyWage * 0.5 * totalNightHours);
     holidayAllowance = 0; // 주말은 1.5배 별도 휴일근로로 중복 가산하지 않음
-    publicHolidayAllowance = Math.round(ordinaryHourlyWage * 0.5 * totalPubHolidayHours); // 법정공휴일은 시급의 0.5배 수당 가산
+    
+    // 5월 1일 근로자의 날에만 공휴일근로수당 적용, 나머지 공휴일은 대체근로수당(0.5배 가산)에 포함
+    publicHolidayAllowance = (totalLaborDayHours > 0) ? Math.round(ordinaryHourlyWage * 0.5 * totalLaborDayHours) : 0;
+    substituteHours = totalOtherHolidayHours;
+    substituteAllowance = Math.round(totalOtherHolidayHours * ordinaryHourlyWage * 0.5);
+    substituteExplanation = totalOtherHolidayHours > 0 
+      ? `대체근로수당 (공휴일대체 ${totalOtherHolidayHours}h): ${substituteAllowance.toLocaleString()}원` 
+      : '해당 없음 (0원)';
 
     for (const [wk, hrs] of Object.entries(weeklyHoursMap)) {
       if (hrs >= 15) {
@@ -665,9 +679,11 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
     }
   }
 
-  // 월급제/시급제 공통: 공휴일 근무가 발생한 경우 법정공휴일 0.5배 가산수당 추가
-  if (employee.wage_type === 'MONTHLY' && totalPubHolidayHours > 0 && publicHolidayAllowance === 0) {
-    publicHolidayAllowance = Math.round(ordinaryHourlyWage * 0.5 * totalPubHolidayHours);
+  // 월급제 근로자의 날(5월 1일) 공휴일근로수당: 오직 5월 1일 근로자의 날에만 적용
+  if (totalLaborDayHours > 0 && publicHolidayAllowance === 0) {
+    publicHolidayAllowance = Math.round(ordinaryHourlyWage * 0.5 * totalLaborDayHours);
+  } else if (totalLaborDayHours === 0) {
+    publicHolidayAllowance = 0;
   }
 
   // 지급합계 (A)
