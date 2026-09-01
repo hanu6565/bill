@@ -130,18 +130,30 @@ export default function PayrollCalculation({ stores, currentStoreId, setCurrentS
     }
   };
 
-  const openComparisonModal = (item) => {
-    let breakdown = item.calculation_breakdown;
-    if (typeof breakdown === 'string') {
+  const parseJsonField = (field, defaultVal) => {
+    if (!field) return defaultVal;
+    if (typeof field === 'object') return field;
+    if (typeof field === 'string') {
       try {
-        breakdown = JSON.parse(breakdown);
+        return JSON.parse(field);
       } catch (e) {
-        breakdown = {};
+        return defaultVal;
       }
     }
+    return defaultVal;
+  };
+
+  const openComparisonModal = (item) => {
+    if (!item) return;
+    const breakdown = parseJsonField(item.calculation_breakdown, {});
+    const warnings = parseJsonField(item.inspection_warnings || item.warnings, []);
+    const comparison = parseJsonField(item.comparison_data || item.comparison, {});
+
     setSelectedDetail({
       ...item,
-      calculation_breakdown: breakdown || {}
+      calculation_breakdown: breakdown,
+      inspection_warnings: Array.isArray(warnings) ? warnings : [],
+      comparison_data: comparison
     });
     setIsCompareModalOpen(true);
   };
@@ -467,126 +479,259 @@ export default function PayrollCalculation({ stores, currentStoreId, setCurrentS
           </button>
         }
       >
-        {selectedDetail && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Top comparison stats */}
-            {selectedDetail.comparison_data && selectedDetail.comparison_data.hasPrevMonth && (
-              <div style={{ 
-                background: selectedDetail.comparison_data.isSignificantChange ? 'var(--warning-bg)' : 'var(--bg-surface-elevated)', 
-                border: selectedDetail.comparison_data.isSignificantChange ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid var(--border-subtle)',
-                padding: '14px', 
-                borderRadius: 'var(--radius-md)' 
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontWeight: '700', color: selectedDetail.comparison_data.isSignificantChange ? '#fbbf24' : '#fff' }}>
-                    📊 전월 대비 지급총액 변동 분석
-                  </span>
-                  <span className={`badge ${selectedDetail.comparison_data.isSignificantChange ? 'badge-warning' : 'badge-neutral'}`}>
-                    전월 대비 {selectedDetail.comparison_data.diffPercent > 0 ? `+${selectedDetail.comparison_data.diffPercent}%` : `${selectedDetail.comparison_data.diffPercent}%`}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', gap: '20px', marginTop: '8px', fontSize: '13px' }}>
-                  <div>지난달 지급총액: <strong>{(selectedDetail.comparison_data.prevGrossPay || 0).toLocaleString()}원</strong></div>
-                  <div>이번달 지급총액: <strong>{(selectedDetail.total_gross_pay || 0).toLocaleString()}원</strong></div>
-                  <div>차액: <strong>{(selectedDetail.comparison_data.diffGrossPay || 0).toLocaleString()}원</strong></div>
-                </div>
-              </div>
-            )}
+        {selectedDetail && (() => {
+          const breakdown = selectedDetail.calculation_breakdown || {};
+          const warnings = Array.isArray(selectedDetail.inspection_warnings) ? selectedDetail.inspection_warnings : [];
+          const comp = selectedDetail.comparison_data || {};
+          const allowancesSum = (selectedDetail.total_gross_pay || 0) - (selectedDetail.basic_pay || 0);
+          const fourInsSum = (selectedDetail.national_pension || 0) + (selectedDetail.health_insurance || 0) + (selectedDetail.longterm_care || 0) + (selectedDetail.employment_insurance || 0);
+          const taxSum = (selectedDetail.income_tax || 0) + (selectedDetail.local_income_tax || 0);
 
-            {/* Validation Warnings List */}
-            {selectedDetail.inspection_warnings && selectedDetail.inspection_warnings.length > 0 && (
-              <div style={{ background: 'var(--danger-bg)', border: '1px solid rgba(239, 68, 68, 0.4)', padding: '14px', borderRadius: 'var(--radius-md)' }}>
-                <h4 style={{ color: '#f87171', fontSize: '13px', fontWeight: '700', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <AlertTriangle size={15} /> 검증 경고 항목
-                </h4>
-                <ul style={{ paddingLeft: '20px', color: '#fca5a5', fontSize: '12px' }}>
-                  {selectedDetail.inspection_warnings.map((w, idx) => (
-                    <li key={idx}>{w}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Natural Sentence Formulas Breakdown */}
-            <div style={{ background: 'var(--bg-surface-elevated)', padding: '18px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
-              <h4 style={{ fontSize: '14px', fontWeight: '700', color: '#60a5fa', marginBottom: '12px' }}>
-                📝 항목별 법정 산출식 및 산출 방법
-              </h4>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12.5px', color: '#cbd5e1' }}>
-                <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
-                  <strong>기본급:</strong> {selectedDetail.calculation_breakdown?.basicPayExplanation || `${(selectedDetail.basic_pay || 0).toLocaleString()}원`}
-                </div>
-
-                <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
-                  <strong>연장근로수당:</strong> {selectedDetail.calculation_breakdown?.overtimeExplanation || '-'}
-                </div>
-
-                <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
-                  <strong>야간근로수당:</strong> {selectedDetail.calculation_breakdown?.nightExplanation || '-'}
-                </div>
-
-                <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
-                  <strong>주말휴일수당:</strong> {selectedDetail.calculation_breakdown?.holidayExplanation || '-'}
-                </div>
-
-                <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
-                  <strong>법정공휴일수당:</strong> {selectedDetail.calculation_breakdown?.pubHolidayExplanation || '-'}
-                </div>
-
-                {selectedDetail.wage_type === 'HOURLY' && (
-                  <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
-                    <strong>주휴수당:</strong> {selectedDetail.calculation_breakdown?.weeklyHolidayExplanation || '-'}
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Employee Summary Card */}
+              <div style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)', padding: '14px 18px', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                <div>
+                  <div style={{ fontSize: '17px', fontWeight: '800', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>{selectedDetail.employee_name}</span>
+                    <span className="badge badge-neutral">{selectedDetail.position || '직원'}</span>
+                    <span className={`badge ${selectedDetail.wage_type === 'HOURLY' ? 'badge-primary' : 'badge-purple'}`}>
+                      {selectedDetail.wage_type === 'HOURLY' ? '시급제' : '월급제'}
+                    </span>
+                    {selectedDetail.is_dual_reporting === 1 && (
+                      <span className="badge badge-warning">이중신고</span>
+                    )}
                   </div>
-                )}
-
-                {selectedDetail.annual_leave_allowance > 0 && (
-                  <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
-                    <strong>연차수당:</strong> {selectedDetail.calculation_breakdown?.annualLeaveExplanation || '-'}
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    귀속연월: <strong>{selectedDetail.year_month}</strong> | 입사일: {selectedDetail.hire_date || '-'} | 부양가족: {selectedDetail.dependents_count || 1}명
                   </div>
-                )}
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>실지급액 (차인지급액)</div>
+                  <div style={{ fontSize: '20px', fontWeight: '900', color: '#34d399' }}>
+                    {(selectedDetail.net_pay || 0).toLocaleString()}원
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {/* Dual Reporting Breakdown if active */}
-            {selectedDetail.is_dual_reporting === 1 && (
-              selectedDetail.payslip_display_mode === 'SPLIT_PAY' ? (
-                <div style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '16px', borderRadius: 'var(--radius-md)' }}>
-                  <h4 style={{ fontSize: '14px', fontWeight: '700', color: '#60a5fa', marginBottom: '8px' }}>
-                    ⚡ 이중신고 구조: 2개 계좌 분리 지급 방식
+              {/* Top comparison stats */}
+              {comp && comp.hasPrevMonth && (
+                <div style={{ 
+                  background: comp.isSignificantChange ? 'rgba(245, 158, 11, 0.1)' : 'var(--bg-surface-elevated)', 
+                  border: comp.isSignificantChange ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid var(--border-subtle)',
+                  padding: '12px 16px', 
+                  borderRadius: 'var(--radius-md)' 
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: '700', color: comp.isSignificantChange ? '#fbbf24' : '#fff', fontSize: '13px' }}>
+                      📊 전월 대비 지급총액 변동 분석
+                    </span>
+                    <span className={`badge ${comp.isSignificantChange ? 'badge-warning' : 'badge-neutral'}`}>
+                      전월 대비 {comp.diffPercent > 0 ? `+${comp.diffPercent}%` : `${comp.diffPercent}%`}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '20px', marginTop: '6px', fontSize: '12.5px' }}>
+                    <div>지난달 지급총액: <strong>{(comp.prevGrossPay || 0).toLocaleString()}원</strong></div>
+                    <div>이번달 지급총액: <strong>{(selectedDetail.total_gross_pay || 0).toLocaleString()}원</strong></div>
+                    <div>차액: <strong>{(comp.diffGrossPay || 0).toLocaleString()}원</strong></div>
+                  </div>
+                </div>
+              )}
+
+              {/* Validation Warnings List */}
+              {warnings && warnings.length > 0 && (
+                <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.4)', padding: '12px 16px', borderRadius: 'var(--radius-md)' }}>
+                  <h4 style={{ color: '#f87171', fontSize: '13px', fontWeight: '700', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <AlertTriangle size={15} /> 자동 검증 알림 항목 ({warnings.length}건)
                   </h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '13px' }}>
-                    <div style={{ background: 'var(--bg-surface)', padding: '10px', borderRadius: 'var(--radius-sm)' }}>
-                      <span style={{ color: 'var(--text-muted)' }}>사업자통장 지급분 (신고기준 세후):</span><br />
-                      <strong style={{ fontSize: '16px', color: '#60a5fa' }}>{(selectedDetail.biz_account_pay || 0).toLocaleString()}원</strong>
+                  <ul style={{ paddingLeft: '20px', color: '#fca5a5', fontSize: '12px', margin: 0 }}>
+                    {warnings.map((w, idx) => (
+                      <li key={idx} style={{ marginTop: '2px' }}>{w}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* 2-Column Pay Summary */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                {/* Earnings */}
+                <div style={{ background: 'var(--bg-surface-elevated)', padding: '14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ fontWeight: '700', color: '#60a5fa', fontSize: '13px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '6px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>지급 항목</span>
+                    <span>{(selectedDetail.total_gross_pay || 0).toLocaleString()}원</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>기본급</span>
+                      <span>{(selectedDetail.basic_pay || 0).toLocaleString()}원</span>
                     </div>
-                    <div style={{ background: 'var(--bg-surface)', padding: '10px', borderRadius: 'var(--radius-sm)' }}>
-                      <span style={{ color: 'var(--text-muted)' }}>개인통장 지급분 (미신고차액 세후):</span><br />
-                      <strong style={{ fontSize: '16px', color: '#34d399' }}>{(selectedDetail.personal_account_pay || 0).toLocaleString()}원</strong>
-                    </div>
+                    {selectedDetail.overtime_allowance > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>연장근로수당</span>
+                        <span>{(selectedDetail.overtime_allowance || 0).toLocaleString()}원</span>
+                      </div>
+                    )}
+                    {selectedDetail.night_allowance > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>야간근로수당</span>
+                        <span>{(selectedDetail.night_allowance || 0).toLocaleString()}원</span>
+                      </div>
+                    )}
+                    {selectedDetail.holiday_allowance > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>휴일근로수당</span>
+                        <span>{(selectedDetail.holiday_allowance || 0).toLocaleString()}원</span>
+                      </div>
+                    )}
+                    {selectedDetail.public_holiday_allowance > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>공휴일근로수당</span>
+                        <span>{(selectedDetail.public_holiday_allowance || 0).toLocaleString()}원</span>
+                      </div>
+                    )}
+                    {selectedDetail.annual_leave_allowance > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>연차수당</span>
+                        <span>{(selectedDetail.annual_leave_allowance || 0).toLocaleString()}원</span>
+                      </div>
+                    )}
+                    {selectedDetail.attendance_bonus > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>만근수당</span>
+                        <span>{(selectedDetail.attendance_bonus || 0).toLocaleString()}원</span>
+                      </div>
+                    )}
+                    {selectedDetail.substitute_allowance > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>대체근로수당</span>
+                        <span>{(selectedDetail.substitute_allowance || 0).toLocaleString()}원</span>
+                      </div>
+                    )}
                   </div>
                 </div>
-              ) : (
-                <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '14px 16px', borderRadius: 'var(--radius-md)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                    <div>
-                      <h4 style={{ fontSize: '13.5px', fontWeight: '700', color: '#34d399' }}>
-                        ⚡ 이중신고 구조: 단일 계좌 지급 ('미신고공제' 한 줄 처리 방식)
-                      </h4>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                        통장 분리 없이 전액 단일 계좌로 지급되며, 미신고차액에 대한 원천공제는 공제내역에 단일 항목으로 처리됩니다.
+
+                {/* Deductions */}
+                <div style={{ background: 'var(--bg-surface-elevated)', padding: '14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ fontWeight: '700', color: '#f87171', fontSize: '13px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '6px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>공제 항목</span>
+                    <span>{(selectedDetail.total_deductions || 0).toLocaleString()}원</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>국민연금 (4.5%)</span>
+                      <span>{(selectedDetail.national_pension || 0).toLocaleString()}원</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>건강보험 (3.545%)</span>
+                      <span>{(selectedDetail.health_insurance || 0).toLocaleString()}원</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>장기요양보험</span>
+                      <span>{(selectedDetail.longterm_care || 0).toLocaleString()}원</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>고용보험 (0.9%)</span>
+                      <span>{(selectedDetail.employment_insurance || 0).toLocaleString()}원</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>소득세 (간이세액)</span>
+                      <span>{(selectedDetail.income_tax || 0).toLocaleString()}원</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>지방소득세 (10%)</span>
+                      <span>{(selectedDetail.local_income_tax || 0).toLocaleString()}원</span>
+                    </div>
+                    {selectedDetail.unreported_diff_deduction > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#fbbf24' }}>
+                        <span>미신고차액공제</span>
+                        <span>{(selectedDetail.unreported_diff_deduction || 0).toLocaleString()}원</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Natural Sentence Formulas Breakdown */}
+              <div style={{ background: 'var(--bg-surface-elevated)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+                <h4 style={{ fontSize: '13.5px', fontWeight: '700', color: '#60a5fa', marginBottom: '10px' }}>
+                  📝 항목별 법정 산출식 및 산출 근거
+                </h4>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: '#cbd5e1' }}>
+                  <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
+                    <strong style={{ color: '#fff' }}>기본급:</strong> {breakdown.basicPayExplanation || `${(selectedDetail.basic_pay || 0).toLocaleString()}원`}
+                  </div>
+
+                  <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
+                    <strong style={{ color: '#fff' }}>연장근로수당:</strong> {breakdown.overtimeExplanation || (breakdown.overtimeExplanation1 ? `${breakdown.overtimeExplanation1} + ${breakdown.overtimeExplanation2 || ''}` : '-')}
+                  </div>
+
+                  <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
+                    <strong style={{ color: '#fff' }}>야간근로수당:</strong> {breakdown.nightExplanation || '-'}
+                  </div>
+
+                  <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
+                    <strong style={{ color: '#fff' }}>주말휴일수당:</strong> {breakdown.holidayExplanation || '-'}
+                  </div>
+
+                  <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
+                    <strong style={{ color: '#fff' }}>법정공휴일수당:</strong> {breakdown.pubHolidayExplanation || '-'}
+                  </div>
+
+                  {selectedDetail.wage_type === 'HOURLY' && (
+                    <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
+                      <strong style={{ color: '#fff' }}>주휴수당:</strong> {breakdown.weeklyHolidayExplanation || '-'}
+                    </div>
+                  )}
+
+                  {selectedDetail.annual_leave_allowance > 0 && (
+                    <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
+                      <strong style={{ color: '#fff' }}>연차수당:</strong> {breakdown.annualLeaveExplanation || '-'}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Dual Reporting Breakdown if active */}
+              {selectedDetail.is_dual_reporting === 1 && (
+                selectedDetail.payslip_display_mode === 'SPLIT_PAY' ? (
+                  <div style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '14px', borderRadius: 'var(--radius-md)' }}>
+                    <h4 style={{ fontSize: '13.5px', fontWeight: '700', color: '#60a5fa', marginBottom: '8px' }}>
+                      ⚡ 이중신고 구조: 2개 계좌 분리 지급 방식
+                    </h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '12.5px' }}>
+                      <div style={{ background: 'var(--bg-surface)', padding: '10px', borderRadius: 'var(--radius-sm)' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>사업자통장 지급분 (신고기준 세후):</span><br />
+                        <strong style={{ fontSize: '15px', color: '#60a5fa' }}>{(selectedDetail.biz_account_pay || 0).toLocaleString()}원</strong>
+                      </div>
+                      <div style={{ background: 'var(--bg-surface)', padding: '10px', borderRadius: 'var(--radius-sm)' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>개인통장 지급분 (미신고차액 세후):</span><br />
+                        <strong style={{ fontSize: '15px', color: '#34d399' }}>{(selectedDetail.personal_account_pay || 0).toLocaleString()}원</strong>
                       </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>미신고차액 공제액 (10%):</span><br />
-                      <strong style={{ fontSize: '15px', color: '#f87171' }}>-{(selectedDetail.unreported_diff_deduction || 0).toLocaleString()}원</strong>
+                  </div>
+                ) : (
+                  <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '12px 14px', borderRadius: 'var(--radius-md)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                      <div>
+                        <h4 style={{ fontSize: '13px', fontWeight: '700', color: '#34d399' }}>
+                          ⚡ 이중신고 구조: 단일 계좌 지급 ('미신고공제' 한 줄 처리 방식)
+                        </h4>
+                        <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                          통장 분리 없이 전액 단일 계좌로 지급되며, 미신고차액에 대한 원천공제는 공제내역에 단일 항목으로 처리됩니다.
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>미신고차액 공제액 (10%):</span><br />
+                        <strong style={{ fontSize: '14px', color: '#f87171' }}>-{(selectedDetail.unreported_diff_deduction || 0).toLocaleString()}원</strong>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )
-            )}
-          </div>
-        )}
+                )
+              )}
+            </div>
+          );
+        })()}
       </Modal>
 
       {/* Re-Open Modal */}
