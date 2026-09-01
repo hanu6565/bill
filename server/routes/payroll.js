@@ -182,33 +182,40 @@ router.get('/run', async (req, res) => {
     await db.run("DELETE FROM employees WHERE name LIKE '%DUC%' OR name LIKE '%HUY%' OR id = 7");
     await db.run("DELETE FROM payroll_details WHERE employee_id NOT IN (SELECT id FROM employees)");
 
-    const run = await db.get(
+    let run = await db.get(
       'SELECT * FROM payroll_runs WHERE store_id = ? AND year_month = ?',
       [store_id, year_month]
     );
 
-    if (!run) {
-      return res.json({ success: true, run: null, details: [] });
-    }
+    const activeEmployees = await db.query(
+      `SELECT * FROM employees 
+       WHERE store_id = ? AND (resign_date IS NULL OR resign_date >= ?) AND hire_date <= ?`,
+      [store_id, `${year_month}-01`, `${year_month}-31`]
+    );
 
-    // Auto-sync missing active employees into unconfirmed payroll runs
-    if (run.status !== 'CONFIRMED') {
-      const activeEmployees = await db.query(
-        `SELECT * FROM employees 
-         WHERE store_id = ? AND (resign_date IS NULL OR resign_date >= ?) AND hire_date <= ?`,
-        [store_id, `${year_month}-01`, `${year_month}-31`]
-      );
-      for (const emp of activeEmployees) {
-        const existingDetail = await db.get(
-          'SELECT id FROM payroll_details WHERE payroll_run_id = ? AND employee_id = ?',
-          [run.id, emp.id]
+    if (!run) {
+      if (activeEmployees.length > 0) {
+        const result = await db.run(
+          `INSERT INTO payroll_runs (store_id, year_month, status, snapshot_rates)
+           VALUES (?, ?, 'INSPECTING', ?)`,
+          [store_id, year_month, JSON.stringify(DEFAULT_RATES_2026)]
         );
-        if (!existingDetail) {
+        const runId = result.lastID;
+
+        let totalGrossSum = 0;
+        let totalDeductSum = 0;
+        let totalNetSum = 0;
+
+        for (const emp of activeEmployees) {
           const attendance = await db.query(
             'SELECT * FROM attendance WHERE employee_id = ? AND work_date LIKE ?',
             [emp.id, `${year_month}-%`]
           );
           const payroll = calculateEmployeePayroll(emp, attendance, year_month, DEFAULT_RATES_2026, {});
+          totalGrossSum += payroll.totalGrossPay;
+          totalDeductSum += payroll.totalDeductions;
+          totalNetSum += payroll.netPay;
+
           await db.run(
             `INSERT INTO payroll_details (
               payroll_run_id, employee_id, store_id, year_month, inspected,
@@ -230,7 +237,7 @@ router.get('/run', async (req, res) => {
               ?, ?, ?, ?, ?
             )`,
             [
-              run.id, emp.id, store_id, year_month,
+              runId, emp.id, store_id, year_month,
               payroll.basicPay, payroll.overtimeAllowance, payroll.nightAllowance, payroll.holidayAllowance, payroll.publicHolidayAllowance,
               payroll.annualLeaveAllowance, payroll.weeklyHolidayAllowance, payroll.attendanceBonus, payroll.substituteAllowance,
               payroll.carAllowance, payroll.bonus, payroll.specialAllowance, payroll.totalGrossPay,
@@ -241,7 +248,107 @@ router.get('/run', async (req, res) => {
             ]
           );
         }
+
+        await db.run(
+          `UPDATE payroll_runs 
+           SET total_gross_pay = ?, total_deductions = ?, total_net_pay = ?
+           WHERE id = ?`,
+          [totalGrossSum, totalDeductSum, totalNetSum, runId]
+        );
+
+        await validatePayrollRun(runId, store_id, year_month, DEFAULT_RATES_2026);
+        run = await db.get('SELECT * FROM payroll_runs WHERE id = ?', [runId]);
+      } else {
+        return res.json({ success: true, run: null, details: [] });
       }
+    } else if (run.status !== 'CONFIRMED') {
+      // Auto-sync existing unconfirmed payroll runs with the latest attendance inputs
+      let totalGrossSum = 0;
+      let totalDeductSum = 0;
+      let totalNetSum = 0;
+
+      for (const emp of activeEmployees) {
+        const attendance = await db.query(
+          'SELECT * FROM attendance WHERE employee_id = ? AND work_date LIKE ?',
+          [emp.id, `${year_month}-%`]
+        );
+        const payroll = calculateEmployeePayroll(emp, attendance, year_month, DEFAULT_RATES_2026, {});
+        totalGrossSum += payroll.totalGrossPay;
+        totalDeductSum += payroll.totalDeductions;
+        totalNetSum += payroll.netPay;
+
+        await db.run(
+          `INSERT INTO payroll_details (
+            payroll_run_id, employee_id, store_id, year_month, inspected,
+            basic_pay, overtime_allowance, night_allowance, holiday_allowance, public_holiday_allowance,
+            annual_leave_allowance, weekly_holiday_allowance, attendance_bonus, substitute_allowance,
+            car_allowance, bonus, special_allowance, total_gross_pay,
+            taxable_income, non_taxable_income,
+            national_pension, health_insurance, longterm_care, employment_insurance,
+            income_tax, local_income_tax, attendance_deduction, probation_deduction, unreported_diff_deduction,
+            total_deductions, net_pay, biz_account_pay, personal_account_pay, calculation_breakdown
+          ) VALUES (
+            ?, ?, ?, ?, 0,
+            ?, ?, ?, ?, ?,
+            ?, ?, ?, ?,
+            ?, ?, ?, ?,
+            ?, ?,
+            ?, ?, ?, ?,
+            ?, ?, ?, ?, ?,
+            ?, ?, ?, ?, ?
+          )
+          ON CONFLICT(payroll_run_id, employee_id) DO UPDATE SET
+            basic_pay = excluded.basic_pay,
+            overtime_allowance = excluded.overtime_allowance,
+            night_allowance = excluded.night_allowance,
+            holiday_allowance = excluded.holiday_allowance,
+            public_holiday_allowance = excluded.public_holiday_allowance,
+            annual_leave_allowance = excluded.annual_leave_allowance,
+            weekly_holiday_allowance = excluded.weekly_holiday_allowance,
+            attendance_bonus = excluded.attendance_bonus,
+            substitute_allowance = excluded.substitute_allowance,
+            car_allowance = excluded.car_allowance,
+            bonus = excluded.bonus,
+            special_allowance = excluded.special_allowance,
+            total_gross_pay = excluded.total_gross_pay,
+            taxable_income = excluded.taxable_income,
+            non_taxable_income = excluded.non_taxable_income,
+            national_pension = excluded.national_pension,
+            health_insurance = excluded.health_insurance,
+            longterm_care = excluded.longterm_care,
+            employment_insurance = excluded.employment_insurance,
+            income_tax = excluded.income_tax,
+            local_income_tax = excluded.local_income_tax,
+            attendance_deduction = excluded.attendance_deduction,
+            probation_deduction = excluded.probation_deduction,
+            unreported_diff_deduction = excluded.unreported_diff_deduction,
+            total_deductions = excluded.total_deductions,
+            net_pay = excluded.net_pay,
+            biz_account_pay = excluded.biz_account_pay,
+            personal_account_pay = excluded.personal_account_pay,
+            calculation_breakdown = excluded.calculation_breakdown,
+            updated_at = CURRENT_TIMESTAMP`,
+          [
+            run.id, emp.id, store_id, year_month,
+            payroll.basicPay, payroll.overtimeAllowance, payroll.nightAllowance, payroll.holidayAllowance, payroll.publicHolidayAllowance,
+            payroll.annualLeaveAllowance, payroll.weeklyHolidayAllowance, payroll.attendanceBonus, payroll.substituteAllowance,
+            payroll.carAllowance, payroll.bonus, payroll.specialAllowance, payroll.totalGrossPay,
+            payroll.taxableIncome, payroll.nonTaxableIncome,
+            payroll.nationalPension, payroll.healthInsurance, payroll.longtermCare, payroll.employmentInsurance,
+            payroll.incomeTax, payroll.localIncomeTax, payroll.attendanceDeduction, payroll.probationDeduction, payroll.unreportedDiffDeduction,
+            payroll.totalDeductions, payroll.netPay, payroll.bizAccountPay, payroll.personalAccountPay, JSON.stringify(payroll.calculationBreakdown)
+          ]
+        );
+      }
+
+      await db.run(
+        `UPDATE payroll_runs 
+         SET total_gross_pay = ?, total_deductions = ?, total_net_pay = ?
+         WHERE id = ?`,
+        [totalGrossSum, totalDeductSum, totalNetSum, run.id]
+      );
+      await validatePayrollRun(run.id, store_id, year_month, DEFAULT_RATES_2026);
+      run = await db.get('SELECT * FROM payroll_runs WHERE id = ?', [run.id]);
     }
 
     await db.run("DELETE FROM payroll_details WHERE employee_id IN (SELECT id FROM employees WHERE name LIKE '%DUC%' OR name LIKE '%HUY%') OR employee_id = 7");

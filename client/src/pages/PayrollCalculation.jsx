@@ -365,6 +365,15 @@ export default function PayrollCalculation({ stores, currentStoreId, setCurrentS
                       <td>
                         <div style={{ fontWeight: '700', color: '#fff' }}>{item.employee_name}</div>
                         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{item.position || '직원'}</div>
+                        {item.calculation_breakdown && item.calculation_breakdown.summary && item.calculation_breakdown.summary.workingDaysCount > 0 ? (
+                          <span className="badge badge-primary" style={{ fontSize: '10px', marginTop: '3px', padding: '1px 6px' }}>
+                            근태 {item.calculation_breakdown.summary.workingDaysCount}일 ({item.calculation_breakdown.summary.totalNetHours}시간)
+                          </span>
+                        ) : (
+                          <span className="badge badge-neutral" style={{ fontSize: '10px', marginTop: '3px', padding: '1px 6px' }}>
+                            근태 미입력
+                          </span>
+                        )}
                       </td>
                       <td>
                         <div style={{ display: 'flex', gap: '3px' }}>
