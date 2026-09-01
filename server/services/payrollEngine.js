@@ -579,9 +579,7 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
       const baseSubHours = 9.0;
       substituteHours = baseSubHours + totalOtherHolidayHours;
       substituteAllowance = Math.round(substituteHours * ordinaryHourlyWage * 0.5);
-      substituteExplanation = totalOtherHolidayHours > 0 
-        ? `${substituteHours}시간 (기본 9h + 공휴일대체 ${totalOtherHolidayHours}h) x ${ordinaryHourlyWage.toLocaleString()}원 x 0.5`
-        : `${substituteHours}시간 x ${ordinaryHourlyWage.toLocaleString()}원 x 0.5`;
+      substituteExplanation = `${substituteHours}시간 x ${ordinaryHourlyWage.toLocaleString()}원 x 0.5`;
 
       if (ordinaryHourlyWage === 10320) {
         basicPay = 2156880;

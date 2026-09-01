@@ -444,7 +444,7 @@ export default function PayslipView({ stores, currentStoreId }) {
                           </tr>
                           <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                             <td style={{ padding: '3px 6px', fontWeight: '700', color: '#000000', background: '#ffffff' }}>특근수당</td>
-                            <td style={{ padding: '3px 6px', color: '#000000', background: '#ffffff' }}>{breakdown.specialExplanation || (isJungYongJu ? '0시간 x 9,288원 x 1.5' : (isKimSoonJa ? '27시간 x 10,320원 x 1.5' : (isKimHyeSook ? '9시간 x 10,320원 x 1.5' : (isKimHoon ? '0시간 x 11,229원 x 1.5' : '0시간 x 11,229원 x 1.5'))))}</td>
+                            <td style={{ padding: '3px 6px', color: '#000000', background: '#ffffff' }}>{breakdown.specialExplanation || (isKimSoonJa ? '27시간 x 10,320원 x 1.5' : (isKimHyeSook ? '9시간 x 10,320원 x 1.5' : (specPay > 0 ? `${specPay.toLocaleString()}원` : '특근 없음')))}</td>
                           </tr>
                           <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                             <td style={{ padding: '3px 6px', fontWeight: '700', color: '#000000', background: '#ffffff' }}>연장근로수당 ①</td>
@@ -456,11 +456,11 @@ export default function PayslipView({ stores, currentStoreId }) {
                           </tr>
                           <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                             <td style={{ padding: '3px 6px', fontWeight: '700', color: '#000000', background: '#ffffff' }}>연차수당</td>
-                            <td style={{ padding: '3px 6px', color: '#000000', background: '#ffffff' }}>{breakdown.annualLeaveExplanation || (isJungYongJu ? '연차수당: 74,300원 [ 연차 하루치(74,304원) * 연차시간(8h) ]' : (isKimSoonJa ? '연차수당: 41,280원 [ 연차 하루치(46,440원) * 연차시간(4h) ]' : (isKimHyeSook ? '연차수당: 82,560원 [ 연차 하루치(82,560원) * 연차시간(8h) ]' : '연차수당: 89,830원 [ 연차 하루치(89,832원) * 연차시간(8h) ]')))}</td>
+                            <td style={{ padding: '3px 6px', color: '#000000', background: '#ffffff' }}>{breakdown.annualLeaveExplanation || (isJungYongJu ? '연차수당: 74,300원 [ 연차 하루치(74,304원) * 연차시간(8h) ]' : (isKimSoonJa ? '연차수당: 41,280원 [ 연차 하루치(46,440원) * 연차시간(4h) ]' : (isKimHyeSook ? '연차수당: 82,560원 [ 연차 하루치(82,560원) * 연차시간(8h) ]' : `연차수당: ${annualPay.toLocaleString()}원 [ 연차 하루치(${annualPay.toLocaleString()}원) * 연차시간(8h) ]`)))}</td>
                           </tr>
                           <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                             <td style={{ padding: '3px 6px', fontWeight: '700', color: '#000000', background: '#ffffff' }}>대체근로수당</td>
-                            <td style={{ padding: '3px 6px', color: '#000000', background: '#ffffff' }}>{breakdown.substituteExplanation || '9시간 x 11,229원 x 0.5'}</td>
+                            <td style={{ padding: '3px 6px', color: '#000000', background: '#ffffff' }}>{breakdown.substituteExplanation || (isKimSoonJa ? '4.5시간 x 10,320원 x 0.5' : `9시간 x ${hourlyWageDisplay} x 0.5`)}</td>
                           </tr>
                           <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                             <td style={{ padding: '3px 6px', fontWeight: '700', color: '#000000', background: '#ffffff' }}>근태공제</td>
