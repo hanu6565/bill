@@ -287,8 +287,11 @@ export async function initDatabase() {
     )`,
     `CREATE INDEX IF NOT EXISTS idx_emp_store ON employees(store_id)`,
     `CREATE INDEX IF NOT EXISTS idx_att_date ON attendance(work_date)`,
+    `CREATE INDEX IF NOT EXISTS idx_att_store_date ON attendance(store_id, work_date)`,
     `CREATE INDEX IF NOT EXISTS idx_att_emp_date ON attendance(employee_id, work_date)`,
-    `CREATE INDEX IF NOT EXISTS idx_payroll_detail_run ON payroll_details(payroll_run_id)`
+    `CREATE INDEX IF NOT EXISTS idx_payroll_run_store_month ON payroll_runs(store_id, year_month)`,
+    `CREATE INDEX IF NOT EXISTS idx_payroll_detail_run ON payroll_details(payroll_run_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_payroll_detail_emp ON payroll_details(employee_id)`
   ];
 
   for (const sql of statements) {

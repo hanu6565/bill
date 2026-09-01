@@ -220,10 +220,18 @@ export function calculateIncomeTax(monthlyTaxableIncome, dependentsCount = 1) {
   const dep = Math.min(11, Math.max(1, dependentsCount));
   const monthlyThousand = Math.floor(monthlyTaxableIncome / 1000);
 
-  // Exact Tax Table Lookup matching Korean NTS and User's Excel workbook
+  // Exact Tax Table Lookup matching Korean NTS and User's Excel workbook (O(log N) Binary Search)
   if (simplifiedTaxTable.length > 0) {
-    for (const row of simplifiedTaxTable) {
-      if (row.min <= monthlyThousand && monthlyThousand < row.max) {
+    let low = 0;
+    let high = simplifiedTaxTable.length - 1;
+    while (low <= high) {
+      const mid = (low + high) >> 1;
+      const row = simplifiedTaxTable[mid];
+      if (monthlyThousand < row.min) {
+        high = mid - 1;
+      } else if (monthlyThousand >= row.max) {
+        low = mid + 1;
+      } else {
         return row.taxes[dep - 1] || 0;
       }
     }
