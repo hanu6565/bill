@@ -130,8 +130,19 @@ export default function PayrollCalculation({ stores, currentStoreId, setCurrentS
     }
   };
 
-  const openComparisonModal = (detail) => {
-    setSelectedDetail(detail);
+  const openComparisonModal = (item) => {
+    let breakdown = item.calculation_breakdown;
+    if (typeof breakdown === 'string') {
+      try {
+        breakdown = JSON.parse(breakdown);
+      } catch (e) {
+        breakdown = {};
+      }
+    }
+    setSelectedDetail({
+      ...item,
+      calculation_breakdown: breakdown || {}
+    });
     setIsCompareModalOpen(true);
   };
 
@@ -504,34 +515,34 @@ export default function PayrollCalculation({ stores, currentStoreId, setCurrentS
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12.5px', color: '#cbd5e1' }}>
                 <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
-                  <strong>기본급:</strong> {selectedDetail.calculation_breakdown.basicPayExplanation || `${(selectedDetail.basic_pay || 0).toLocaleString()}원`}
+                  <strong>기본급:</strong> {selectedDetail.calculation_breakdown?.basicPayExplanation || `${(selectedDetail.basic_pay || 0).toLocaleString()}원`}
                 </div>
 
                 <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
-                  <strong>연장근로수당:</strong> {selectedDetail.calculation_breakdown.overtimeExplanation || '-'}
+                  <strong>연장근로수당:</strong> {selectedDetail.calculation_breakdown?.overtimeExplanation || '-'}
                 </div>
 
                 <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
-                  <strong>야간근로수당:</strong> {selectedDetail.calculation_breakdown.nightExplanation || '-'}
+                  <strong>야간근로수당:</strong> {selectedDetail.calculation_breakdown?.nightExplanation || '-'}
                 </div>
 
                 <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
-                  <strong>주말휴일수당:</strong> {selectedDetail.calculation_breakdown.holidayExplanation || '-'}
+                  <strong>주말휴일수당:</strong> {selectedDetail.calculation_breakdown?.holidayExplanation || '-'}
                 </div>
 
                 <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
-                  <strong>법정공휴일수당:</strong> {selectedDetail.calculation_breakdown.pubHolidayExplanation || '-'}
+                  <strong>법정공휴일수당:</strong> {selectedDetail.calculation_breakdown?.pubHolidayExplanation || '-'}
                 </div>
 
                 {selectedDetail.wage_type === 'HOURLY' && (
                   <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
-                    <strong>주휴수당:</strong> {selectedDetail.calculation_breakdown.weeklyHolidayExplanation || '-'}
+                    <strong>주휴수당:</strong> {selectedDetail.calculation_breakdown?.weeklyHolidayExplanation || '-'}
                   </div>
                 )}
 
                 {selectedDetail.annual_leave_allowance > 0 && (
                   <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
-                    <strong>연차수당:</strong> {selectedDetail.calculation_breakdown.annualLeaveExplanation || '-'}
+                    <strong>연차수당:</strong> {selectedDetail.calculation_breakdown?.annualLeaveExplanation || '-'}
                   </div>
                 )}
               </div>

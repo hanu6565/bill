@@ -99,6 +99,33 @@ export default function PayslipView({ stores, currentStoreId }) {
         </div>
       </div>
 
+      {/* A4 Print Dedicated Style */}
+      <style>{`
+        @media print {
+          @page {
+            size: A4 portrait !important;
+            margin: 10mm 12mm !important;
+          }
+          body {
+            background: #ffffff !important;
+            color: #000000 !important;
+          }
+          .no-print, .navbar, .btn {
+            display: none !important;
+          }
+          .payslip-paper {
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin: 0 auto !important;
+            max-width: 100% !important;
+            width: 100% !important;
+            border: none !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+          }
+        }
+      `}</style>
+
       {/* Payslip Document Preview matching representative photo */}
       {selectedItem ? (
         <div 
@@ -107,25 +134,25 @@ export default function PayslipView({ stores, currentStoreId }) {
           style={{ 
             background: '#ffffff', 
             color: '#000000', 
-            padding: '48px 50px', 
+            padding: '36px 40px', 
             borderRadius: '2px', 
             maxWidth: '780px', 
             margin: '0 auto', 
             boxShadow: '0 4px 25px rgba(0,0,0,0.25)', 
             fontFamily: '"Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif',
-            lineHeight: 1.4
+            lineHeight: 1.35
           }}
         >
           {/* Header Title */}
-          <div style={{ textAlign: 'left', marginBottom: '28px' }}>
-            <h1 style={{ fontSize: '26px', fontWeight: '900', color: '#000000', margin: 0, letterSpacing: '-0.5px' }}>
+          <div style={{ textAlign: 'left', marginBottom: '20px' }}>
+            <h1 style={{ fontSize: '24px', fontWeight: '900', color: '#000000', margin: 0, letterSpacing: '-0.5px' }}>
               {selectedItem.year_month.split('-')[0]}년 {parseInt(selectedItem.year_month.split('-')[1], 10)}월 급여명세서
             </h1>
           </div>
 
           {/* Section 1: 기본정보 */}
-          <div style={{ marginBottom: '22px' }}>
-            <div style={{ fontWeight: '800', fontSize: '13.5px', color: '#000000', marginBottom: '8px' }}>
+          <div style={{ marginBottom: '18px' }}>
+            <div style={{ fontWeight: '800', fontSize: '13px', color: '#000000', marginBottom: '6px' }}>
               기본정보
             </div>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', borderTop: '2px solid #000000', borderBottom: '2px solid #000000', color: '#000000' }}>

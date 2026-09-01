@@ -603,15 +603,16 @@ button.nav-link.active,
   font-size: 11px !important;
 }
 
-/* Print Styles */
+/* Print Styles for A4 Paper */
 @media print {
   @page {
-    size: A4 landscape;
-    margin: 6mm;
+    size: A4 portrait;
+    margin: 8mm 10mm;
   }
   body {
     background: #ffffff !important;
     color: #000000 !important;
+    font-size: 11px !important;
   }
   .navbar, .btn, .no-print, .modal-backdrop {
     display: none !important;
@@ -621,6 +622,34 @@ button.nav-link.active,
     padding: 0 !important;
     margin: 0 !important;
   }
+  
+  /* Payslip Print Container */
+  .payslip-paper {
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    border: none !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+  .payslip-paper table {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .payslip-paper th, .payslip-paper td {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .stamp-seal {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Wage Ledger Print Container (Landscape) */
   .wage-ledger-document {
     box-shadow: none !important;
     padding: 0 !important;
