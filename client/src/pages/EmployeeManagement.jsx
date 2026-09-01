@@ -89,11 +89,9 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
   };
 
   const handleStoreChange = (selectedStoreId) => {
-    const targetStore = stores.find(s => s.id === Number(selectedStoreId));
     setFormData(prev => ({
       ...prev,
-      store_id: selectedStoreId,
-      wage_type: targetStore ? targetStore.default_wage_type : 'MONTHLY'
+      store_id: selectedStoreId
     }));
   };
 
@@ -446,6 +444,78 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
           {/* TAB 1: BASIC INFO */}
           {modalTab === 'basic' && (
             <>
+              {/* Wage Type Selection in Tab 1 */}
+              <div style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)', padding: '14px 16px', borderRadius: 'var(--radius-md)' }}>
+                <label className="form-label" style={{ fontWeight: '700', color: '#fff', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <DollarSign size={16} color="#60a5fa" /> 직원 급여 지급 형태 선택 (매장 내 월급제/시급제 직원 개별 지정) *
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <label 
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '12px 14px',
+                      background: formData.wage_type === 'MONTHLY' ? 'rgba(59, 130, 246, 0.15)' : 'var(--bg-surface)',
+                      border: formData.wage_type === 'MONTHLY' ? '2px solid #3b82f6' : '1px solid var(--border-subtle)',
+                      borderRadius: 'var(--radius-md)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      margin: 0
+                    }}
+                  >
+                    <input 
+                      type="radio" 
+                      name="wage_type_tab1"
+                      value="MONTHLY"
+                      checked={formData.wage_type === 'MONTHLY'}
+                      onChange={() => setFormData({ ...formData, wage_type: 'MONTHLY' })}
+                      style={{ width: '18px', height: '18px', accentColor: '#3b82f6' }}
+                    />
+                    <div>
+                      <div style={{ fontWeight: '700', color: formData.wage_type === 'MONTHLY' ? '#60a5fa' : '#fff', fontSize: '13.5px' }}>
+                        🟢 월급제 직원
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        고정 책정 월급 + 중도입퇴사 일할계산
+                      </div>
+                    </div>
+                  </label>
+
+                  <label 
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '12px 14px',
+                      background: formData.wage_type === 'HOURLY' ? 'rgba(16, 185, 129, 0.15)' : 'var(--bg-surface)',
+                      border: formData.wage_type === 'HOURLY' ? '2px solid #10b981' : '1px solid var(--border-subtle)',
+                      borderRadius: 'var(--radius-md)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      margin: 0
+                    }}
+                  >
+                    <input 
+                      type="radio" 
+                      name="wage_type_tab1"
+                      value="HOURLY"
+                      checked={formData.wage_type === 'HOURLY'}
+                      onChange={() => setFormData({ ...formData, wage_type: 'HOURLY' })}
+                      style={{ width: '18px', height: '18px', accentColor: '#10b981' }}
+                    />
+                    <div>
+                      <div style={{ fontWeight: '700', color: formData.wage_type === 'HOURLY' ? '#34d399' : '#fff', fontSize: '13.5px' }}>
+                        🔵 시급제 직원 (알바/파트)
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        실제 근태 근무시간 × 시급 + 주휴수당
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">소속 매장 *</label>
@@ -456,7 +526,7 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
                     required
                   >
                     {stores.map(s => (
-                      <option key={s.id} value={s.id}>{s.name} ({s.default_wage_type === 'HOURLY' ? '시급제 매장' : '월급제 매장'})</option>
+                      <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
                   </select>
                 </div>
@@ -642,61 +712,122 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
                 </button>
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">급여방식 선택 (매장 기본값 오버라이드 가능)</label>
-                  <select 
-                    className="form-select"
-                    value={formData.wage_type}
-                    onChange={(e) => setFormData({ ...formData, wage_type: e.target.value })}
+              {/* Wage Type Selection in Tab 2 */}
+              <div style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)', padding: '14px 16px', borderRadius: 'var(--radius-md)' }}>
+                <label className="form-label" style={{ fontWeight: '700', color: '#fff', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <DollarSign size={16} color="#60a5fa" /> 직원 급여 지급 형태 선택 *
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <label 
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '12px 14px',
+                      background: formData.wage_type === 'MONTHLY' ? 'rgba(59, 130, 246, 0.15)' : 'var(--bg-surface)',
+                      border: formData.wage_type === 'MONTHLY' ? '2px solid #3b82f6' : '1px solid var(--border-subtle)',
+                      borderRadius: 'var(--radius-md)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      margin: 0
+                    }}
                   >
-                    <option value="MONTHLY">월급제 (고정 책정급여 + 일할계산)</option>
-                    <option value="HOURLY">시급제 (근태시간 × 시급 + 주휴수당)</option>
-                  </select>
+                    <input 
+                      type="radio" 
+                      name="wage_type_tab2"
+                      value="MONTHLY"
+                      checked={formData.wage_type === 'MONTHLY'}
+                      onChange={() => setFormData({ ...formData, wage_type: 'MONTHLY' })}
+                      style={{ width: '18px', height: '18px', accentColor: '#3b82f6' }}
+                    />
+                    <div>
+                      <div style={{ fontWeight: '700', color: formData.wage_type === 'MONTHLY' ? '#60a5fa' : '#fff', fontSize: '13.5px' }}>
+                        🟢 월급제 직원
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        고정 책정 월급 + 중도입퇴사 일할계산
+                      </div>
+                    </div>
+                  </label>
+
+                  <label 
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '12px 14px',
+                      background: formData.wage_type === 'HOURLY' ? 'rgba(16, 185, 129, 0.15)' : 'var(--bg-surface)',
+                      border: formData.wage_type === 'HOURLY' ? '2px solid #10b981' : '1px solid var(--border-subtle)',
+                      borderRadius: 'var(--radius-md)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      margin: 0
+                    }}
+                  >
+                    <input 
+                      type="radio" 
+                      name="wage_type_tab2"
+                      value="HOURLY"
+                      checked={formData.wage_type === 'HOURLY'}
+                      onChange={() => setFormData({ ...formData, wage_type: 'HOURLY' })}
+                      style={{ width: '18px', height: '18px', accentColor: '#10b981' }}
+                    />
+                    <div>
+                      <div style={{ fontWeight: '700', color: formData.wage_type === 'HOURLY' ? '#34d399' : '#fff', fontSize: '13.5px' }}>
+                        🔵 시급제 직원 (알바/파트)
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        실제 근태 근무시간 × 시급 + 주휴수당
+                      </div>
+                    </div>
+                  </label>
                 </div>
-                {formData.wage_type === 'MONTHLY' ? (
-                  <>
-                    <div className="form-group">
-                      <label className="form-label">책정급여 (월급) *</label>
-                      <input 
-                        type="number" 
-                        step="10000" 
-                        className="form-input" 
-                        value={formData.contract_salary} 
-                        onChange={(e) => setFormData({ ...formData, contract_salary: parseInt(e.target.value) || 0 })} 
-                        placeholder="3600000" 
-                        required 
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">통상시급 (선택, 명세서 역산용)</label>
-                      <input 
-                        type="number" 
-                        step="1" 
-                        className="form-input" 
-                        value={formData.hourly_wage || ''} 
-                        onChange={(e) => setFormData({ ...formData, hourly_wage: parseInt(e.target.value) || 0 })} 
-                        placeholder="예: 11229 (미입력 시 월급/209h)" 
-                      />
-                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>* 미입력 시 포괄 역산 시급이 적용되며, 법정 최저시급(10,320원) 이상으로 자동 보정됩니다.</span>
-                    </div>
-                  </>
-                ) : (
+              </div>
+
+              {formData.wage_type === 'MONTHLY' ? (
+                <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">시급 (2026년 최저시급 10,320원 이상) *</label>
+                    <label className="form-label">책정급여 (월급) *</label>
                     <input 
                       type="number" 
-                      min="10320" 
-                      step="10" 
+                      step="10000" 
                       className="form-input" 
-                      value={formData.hourly_wage} 
-                      onChange={(e) => setFormData({ ...formData, hourly_wage: parseInt(e.target.value) || 10320 })} 
+                      value={formData.contract_salary} 
+                      onChange={(e) => setFormData({ ...formData, contract_salary: parseInt(e.target.value) || 0 })} 
+                      placeholder="3600000" 
                       required 
                     />
-                    <span style={{ fontSize: '11px', color: '#60a5fa' }}>* 법정 최저시급(10,320원) 미만 입력 시 저장이 제한됩니다.</span>
                   </div>
-                )}
-              </div>
+                  <div className="form-group">
+                    <label className="form-label">통상시급 (선택, 명세서 역산용)</label>
+                    <input 
+                      type="number" 
+                      step="1" 
+                      className="form-input" 
+                      value={formData.hourly_wage || ''} 
+                      onChange={(e) => setFormData({ ...formData, hourly_wage: parseInt(e.target.value) || 0 })} 
+                      placeholder="예: 11229 (미입력 시 월급/209h)" 
+                    />
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>* 미입력 시 포괄 역산 시급이 적용되며, 법정 최저시급(10,320원) 이상으로 자동 보정됩니다.</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="form-group">
+                  <label className="form-label">약정 시급 (2026년 최저시급 10,320원 이상) *</label>
+                  <input 
+                    type="number" 
+                    min="10320" 
+                    step="10" 
+                    className="form-input" 
+                    value={formData.hourly_wage} 
+                    onChange={(e) => setFormData({ ...formData, hourly_wage: parseInt(e.target.value) || 10320 })} 
+                    required 
+                  />
+                  <div style={{ marginTop: '6px', fontSize: '11.5px', color: '#34d399', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>💡 주 15시간 이상 근무 시 법정 주휴수당(시급 × 8h / 40h 비율)이 급여 계산 시 자동으로 합산 산출됩니다.</span>
+                  </div>
+                </div>
+              )}
 
               <div className="form-group">
                 <label className="form-label">고정근무시간 (근태 캘린더 기본값 자동 채움용)</label>
