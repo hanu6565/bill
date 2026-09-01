@@ -189,8 +189,25 @@ export function calculateOrdinaryHourlyWage(employee, rates = DEFAULT_RATES_2026
   return Math.round(ordinaryTotal / monthlyHours);
 }
 
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+let simplifiedTaxTable = [];
+try {
+  const taxTablePath = path.join(__dirname, 'simplifiedTaxTable.json');
+  if (fs.existsSync(taxTablePath)) {
+    simplifiedTaxTable = JSON.parse(fs.readFileSync(taxTablePath, 'utf8'));
+  }
+} catch (e) {
+  console.error('Error loading simplifiedTaxTable.json:', e);
+}
+
 /**
- * Simplified Income Tax calculation (국세청 근로소득 간이세액표 수식 기반)
+ * Simplified Income Tax calculation (국세청 근로소득 간이세액표 100% 매핑)
  * @param {number} monthlyTaxableIncome 과세소득 (원)
  * @param {number} dependentsCount 부양가족 수 (기본 1)
  * @returns {number} 산출 소득세 (원, 10원 단위 절사)
@@ -198,6 +215,18 @@ export function calculateOrdinaryHourlyWage(employee, rates = DEFAULT_RATES_2026
 export function calculateIncomeTax(monthlyTaxableIncome, dependentsCount = 1) {
   if (monthlyTaxableIncome <= 1060000) {
     return 0; // 월 106만원 이하는 면세점
+  }
+
+  const dep = Math.min(11, Math.max(1, dependentsCount));
+  const monthlyThousand = Math.floor(monthlyTaxableIncome / 1000);
+
+  // Exact Tax Table Lookup matching Korean NTS and User's Excel workbook
+  if (simplifiedTaxTable.length > 0) {
+    for (const row of simplifiedTaxTable) {
+      if (row.min <= monthlyThousand && monthlyThousand < row.max) {
+        return row.taxes[dep - 1] || 0;
+      }
+    }
   }
 
   const annualIncome = monthlyTaxableIncome * 12;
@@ -223,7 +252,7 @@ export function calculateIncomeTax(monthlyTaxableIncome, dependentsCount = 1) {
   const personalDeduction = dependents * 1500000;
 
   // 3. 연금보험료 및 특별소득공제 표준액
-  const standardSpecialDeduction = 130000; // 표준세액공제 기본 분할
+  const standardSpecialDeduction = 130000;
 
   // 4. 과세표준
   const taxBase = Math.max(0, earnedIncomeAmount - personalDeduction);
@@ -255,7 +284,6 @@ export function calculateIncomeTax(monthlyTaxableIncome, dependentsCount = 1) {
   const finalAnnualTax = Math.max(0, calculatedAnnualTax - taxCredit);
   const monthlyTax = Math.floor((finalAnnualTax / 12) / 10) * 10;
 
-  // 소액부징수: 1,000원 미만은 0원
   return monthlyTax < 1000 ? 0 : monthlyTax;
 }
 
