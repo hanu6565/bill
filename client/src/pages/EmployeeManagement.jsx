@@ -7,6 +7,89 @@ import api from '../services/api';
 import Modal from '../components/Modal';
 import HourlyWageCalculatorModal from '../components/HourlyWageCalculatorModal';
 
+export const VISA_GUIDES = {
+  'D-2': {
+    title: 'D-2 (유학 / 학위과정)',
+    category: '시간제 취업 (아르바이트 허용)',
+    workHours: '학기 중 주 20~25시간 이내 (TOPIK 성적에 따라 상이) / 주말 및 방학 중 무제한 근무 가능',
+    permits: '출입국관리사무소 사전 [시간제취업(체류자격외활동) 허가서] 발급 필수 (미발급 시 불법고용 과태료 부과)',
+    socialIns: '건강보험 당연가입(외국인유학생 의무), 산재보험 의무가입 / 국민연금·고용보험은 법정 적용 제외',
+    allowedJobs: '일반 음식점 주방보조, 홀서빙, 매장 보조 등 (단, 유흥주점/단란주점/사행업종 절대 불가)'
+  },
+  'D-4': {
+    title: 'D-4 (일반연수 / 어학연수)',
+    category: '시간제 취업 (제한적 허용)',
+    workHours: '입국 후 6개월 경과 후부터 허가 가능 / 주 20시간 이내 (방학 기간도 주 20시간 제한 동일)',
+    permits: '체류자격외활동허가(시간제취업 허가) 사전 승인 필수',
+    socialIns: '건강보험 당연가입, 산재보험 의무가입 / 국민연금·고용보험 제외',
+    allowedJobs: '음식점 주방보조 및 홀서빙 (유흥/사행성 업종 불가)'
+  },
+  'H-2': {
+    title: 'H-2 (방문취업 / 외국국적동포)',
+    category: '특례고용 취업',
+    workHours: '주 40~52시간 전일제 상용직 및 파트타임 자유 근무 가능',
+    permits: '고용노동부 [특례고용가능확인서] 발급 및 채용 후 14일 이내 [외국인 취업개시/근로개시 신고] 필수',
+    socialIns: '4대보험 당연가입 + 외국인 전용보험(출국만기보험, 귀국비용보험, 상해보험) 사업주 의무가입',
+    allowedJobs: '한식, 중식, 일식 등 모든 요식업종 주방/홀/배달 전 직종 자유 취업 가능'
+  },
+  'E-9': {
+    title: 'E-9 (비전문취업 / 고용허가제)',
+    category: '상용 정규 취업',
+    workHours: '법정 주 40시간 + 연장 한도 12시간 (주 최대 52시간 근무 가능)',
+    permits: '고용노동부 [외국인 고용허가서] 및 표준근로계약서 필수 (사업장 변경 시 고용센터 신고)',
+    socialIns: '4대보험 의무가입 + 외국인 전용보험(출국만기보험, 임금체불보증보험) 사업주 가입 필수',
+    allowedJobs: '음식점업 주방보조(정부 허용 업종 확대 대상 사업장), 제조업, 농축산업 등'
+  },
+  'F-4': {
+    title: 'F-4 (재외동포)',
+    category: '광범위 취업 허용',
+    workHours: '근로시간 법적 제한 없음 (주 40~52시간 전일제 및 탄력근무 자유)',
+    permits: '별도 외국인 취업허가 불필요 (내국인과 유사하게 채용 가능)',
+    socialIns: '내국인과 100% 동일하게 4대보험 의무가입 (외국인 전용보험 대상 제외)',
+    allowedJobs: '음식점업 조리, 주방, 매장관리, 매니저, 서빙 등 요식업 전반 근무 가능'
+  },
+  'F-5': {
+    title: 'F-5 (영주권)',
+    category: '완전 자유 취업',
+    workHours: '내국인과 동일 (취업 및 근무시간에 아무런 법적 제한 없음)',
+    permits: '별도 허가나 신고 불필요 (내국인과 동일 채용)',
+    socialIns: '내국인과 100% 동일 (4대보험 의무 적용)',
+    allowedJobs: '모든 직종 및 요식업 전 분야 자유 취업'
+  },
+  'F-6': {
+    title: 'F-6 (결혼이민)',
+    category: '완전 자유 취업',
+    workHours: '내국인과 동일 (근무시간 및 고용형태 무제한)',
+    permits: '별도 취업허가나 외국인 고용허가 절차 불필요',
+    socialIns: '내국인과 100% 동일하게 4대보험 의무가입',
+    allowedJobs: '음식점 주방, 서빙, 점장 등 모든 직무 자유 취업'
+  },
+  'F-2': {
+    title: 'F-2 (거주)',
+    category: '자유 취업',
+    workHours: '내국인과 동일하게 자유 근무 가능',
+    permits: '체류기간 내 취업활동 자유',
+    socialIns: '내국인과 동일 (4대보험 의무 적용)',
+    allowedJobs: '요식업 전 직종 가능'
+  },
+  'E-7': {
+    title: 'E-7 (특정활동 / 전문조리사)',
+    category: '전문인력 취업',
+    workHours: '주 40~52시간 (고용계약서 범위 내)',
+    permits: '전문 조리사 등 고용추천서 및 출입국 E-7 비자 지정 사업장 근무',
+    socialIns: '4대보험 의무가입',
+    allowedJobs: '전문 주방장, 한식/양식/중식/일식 전문 요리사'
+  },
+  'OTHER': {
+    title: '기타 외국인 비자',
+    category: '체류자격 확인 필요',
+    workHours: '체류자격별 법정 취업허가 범위 및 고용노동부 지침 준수 필요',
+    permits: '출입국관리사무소(하이코리아 1345)를 통해 체류자격외활동허가 여부 사전 확인 필수',
+    socialIns: '체류자격 및 국적별 상호주의 원칙에 따른 4대보험 적용',
+    allowedJobs: '취업 자격이 없는 비자(B-1, B-2, C-3 등)는 취업이 엄격히 금지됩니다.'
+  }
+};
+
 export default function EmployeeManagement({ stores, currentStoreId, setCurrentStoreId }) {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -663,29 +746,104 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">국적 및 체류자격</label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <select 
-                      className="form-select"
-                      value={formData.is_foreigner}
-                      onChange={(e) => setFormData({ ...formData, is_foreigner: parseInt(e.target.value) })}
-                      style={{ width: '110px' }}
-                    >
-                      <option value="0">내국인</option>
-                      <option value="1">외국인</option>
-                    </select>
-                    {formData.is_foreigner === 1 && (
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        value={formData.visa_type} 
-                        onChange={(e) => setFormData({ ...formData, visa_type: e.target.value })} 
-                        placeholder="비자 유형 (예: E-9, F-4, H-2)" 
-                      />
-                    )}
-                  </div>
+                  <label className="form-label">국적 및 체류자격 *</label>
+                  <select 
+                    className="form-select"
+                    value={formData.is_foreigner}
+                    onChange={(e) => {
+                      const isFor = parseInt(e.target.value);
+                      setFormData({ 
+                        ...formData, 
+                        is_foreigner: isFor,
+                        visa_type: isFor === 1 && !formData.visa_type ? 'D-2' : (isFor === 0 ? '' : formData.visa_type)
+                      });
+                    }}
+                  >
+                    <option value="0">내국인 (대한민국 국적)</option>
+                    <option value="1">외국인 (비자/체류자격 보유자)</option>
+                  </select>
                 </div>
               </div>
+
+              {/* Foreign Worker Visa Guidelines & Regulatory Standards */}
+              {formData.is_foreigner === 1 && (() => {
+                const visaKey = (formData.visa_type || '').toUpperCase().trim();
+                const matchedKey = Object.keys(VISA_GUIDES).find(k => visaKey.startsWith(k)) || 'OTHER';
+                const guide = VISA_GUIDES[matchedKey] || VISA_GUIDES['OTHER'];
+
+                return (
+                  <div style={{ background: 'rgba(30, 41, 59, 0.95)', border: '1px solid rgba(59, 130, 246, 0.4)', padding: '16px', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '-4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                      <label className="form-label" style={{ fontWeight: '700', color: '#60a5fa', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        🌐 외국인 비자(체류자격) 선택 및 법정 근무기준
+                      </label>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <select 
+                          className="form-select"
+                          style={{ width: '180px', padding: '6px 10px', fontSize: '12.5px', background: '#0f172a', borderColor: '#3b82f6' }}
+                          value={Object.keys(VISA_GUIDES).includes(matchedKey) && matchedKey !== 'OTHER' ? matchedKey : 'CUSTOM'}
+                          onChange={(e) => {
+                            if (e.target.value !== 'CUSTOM') {
+                              setFormData({ ...formData, visa_type: e.target.value });
+                            }
+                          }}
+                        >
+                          <option value="D-2">D-2 (유학 / 학위과정)</option>
+                          <option value="D-4">D-4 (일반연수 / 어학연수)</option>
+                          <option value="H-2">H-2 (방문취업 / 외국동포)</option>
+                          <option value="E-9">E-9 (비전문취업 / 고용허가)</option>
+                          <option value="F-4">F-4 (재외동포)</option>
+                          <option value="F-5">F-5 (영주권)</option>
+                          <option value="F-6">F-6 (결혼이민)</option>
+                          <option value="F-2">F-2 (거주)</option>
+                          <option value="E-7">E-7 (전문조리사 등)</option>
+                          <option value="CUSTOM">✏️ 직접 입력</option>
+                        </select>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          style={{ width: '100px', padding: '6px 10px', fontSize: '12.5px' }}
+                          value={formData.visa_type} 
+                          onChange={(e) => setFormData({ ...formData, visa_type: e.target.value })} 
+                          placeholder="비자 코드" 
+                          required={formData.is_foreigner === 1}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Guidelines Details Box */}
+                    <div style={{ background: 'var(--bg-surface)', padding: '14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '6px' }}>
+                        <span style={{ fontWeight: '800', color: '#fff', fontSize: '13.5px' }}>
+                          📋 {guide.title}
+                        </span>
+                        <span className="badge badge-primary" style={{ fontSize: '11px' }}>
+                          {guide.category}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '10px', marginTop: '4px' }}>
+                        <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: '1.6' }}>
+                          <strong style={{ color: '#60a5fa' }}>⏱️ 허용 근로시간:</strong><br />
+                          {guide.workHours}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: '1.6' }}>
+                          <strong style={{ color: '#f59e0b' }}>📜 필수 인허가/신고:</strong><br />
+                          {guide.permits}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: '1.6' }}>
+                          <strong style={{ color: '#34d399' }}>🛡️ 4대보험 & 전용보험:</strong><br />
+                          {guide.socialIns}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: '1.6' }}>
+                          <strong style={{ color: '#a78bfa' }}>💼 요식업 직종 및 주의사항:</strong><br />
+                          {guide.allowedJobs}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </>
           )}
 
