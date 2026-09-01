@@ -52,12 +52,19 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
     probation_end_date: '',
     probation_rate: 90.0,
 
-    // 비과세 항목
+    // 비과세 및 4대보험/세금 선택 항목
     non_taxable_meal: 0,
     non_taxable_car: 0,
     non_taxable_overtime: 0,
     tax_exempt_income_tax: 1,
     tax_exempt_social_ins: 1,
+    ins_national_pension: 1,
+    ins_health: 1,
+    ins_longterm_care: 1,
+    ins_employment: 1,
+    ins_work_accident: 1,
+    deduct_income_tax: 1,
+    deduct_local_tax: 1,
     ordinary_wage_items: ['basic_pay']
   });
 
@@ -128,6 +135,13 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
       non_taxable_overtime: 0,
       tax_exempt_income_tax: 1,
       tax_exempt_social_ins: 1,
+      ins_national_pension: 1,
+      ins_health: 1,
+      ins_longterm_care: 1,
+      ins_employment: 1,
+      ins_work_accident: 1,
+      deduct_income_tax: 1,
+      deduct_local_tax: 1,
       ordinary_wage_items: ['basic_pay']
     });
     setIsModalOpen(true);
@@ -168,8 +182,15 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
       non_taxable_meal: emp.non_taxable_meal || 0,
       non_taxable_car: emp.non_taxable_car || 0,
       non_taxable_overtime: emp.non_taxable_overtime || 0,
-      tax_exempt_income_tax: emp.tax_exempt_income_tax || 1,
-      tax_exempt_social_ins: emp.tax_exempt_social_ins || 1,
+      tax_exempt_income_tax: emp.tax_exempt_income_tax !== undefined ? emp.tax_exempt_income_tax : 1,
+      tax_exempt_social_ins: emp.tax_exempt_social_ins !== undefined ? emp.tax_exempt_social_ins : 1,
+      ins_national_pension: emp.ins_national_pension !== undefined ? emp.ins_national_pension : 1,
+      ins_health: emp.ins_health !== undefined ? emp.ins_health : 1,
+      ins_longterm_care: emp.ins_longterm_care !== undefined ? emp.ins_longterm_care : 1,
+      ins_employment: emp.ins_employment !== undefined ? emp.ins_employment : 1,
+      ins_work_accident: emp.ins_work_accident !== undefined ? emp.ins_work_accident : 1,
+      deduct_income_tax: emp.deduct_income_tax !== undefined ? emp.deduct_income_tax : (emp.tax_exempt_income_tax !== undefined ? emp.tax_exempt_income_tax : 1),
+      deduct_local_tax: emp.deduct_local_tax !== undefined ? emp.deduct_local_tax : 1,
       ordinary_wage_items: typeof emp.ordinary_wage_items === 'string' ? JSON.parse(emp.ordinary_wage_items || '["basic_pay"]') : (emp.ordinary_wage_items || ['basic_pay'])
     });
     setIsModalOpen(true);
@@ -398,7 +419,7 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
             className={`btn btn-sm ${modalTab === 'insurance' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setModalTab('insurance')}
           >
-            3. 4대보험 & 비과세
+            3. 4대보험 & 세금 & 비과세
           </button>
           <button 
             type="button" 
@@ -523,27 +544,40 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">부양가족 수 (소득세 간이세액표)</label>
+                  <label className="form-label">부양가족 수 (본인 포함) *</label>
                   <input 
                     type="number" 
                     min="1" 
+                    max="11" 
                     className="form-input" 
                     value={formData.dependents_count} 
                     onChange={(e) => setFormData({ ...formData, dependents_count: parseInt(e.target.value) || 1 })} 
+                    required 
                   />
                 </div>
               </div>
 
               <div className="form-row">
                 <div className="form-group">
-                  <label className="form-label">고용형태</label>
+                  <label className="form-label">고용 형태</label>
                   <select 
                     className="form-select"
                     value={formData.employment_type}
                     onChange={(e) => setFormData({ ...formData, employment_type: e.target.value })}
                   >
-                    <option value="REGULAR">상용직 (4대보험 & 근로소득 간이세액표)</option>
-                    <option value="DAILY">일용직 (일용근로소득세 적용)</option>
+                    <option value="REGULAR">상용직 (정규직 / 계약직)</option>
+                    <option value="DAILY">일용직 (일 단위 근로계약 / 15만원 비과세)</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">차량 보유 여부 (자가운전보조금용)</label>
+                  <select 
+                    className="form-select"
+                    value={formData.has_car}
+                    onChange={(e) => setFormData({ ...formData, has_car: parseInt(e.target.value), non_taxable_car: parseInt(e.target.value) })}
+                  >
+                    <option value="0">미보유 (자가운전보조금 불가)</option>
+                    <option value="1">본인명의 차량 보유 (월 20만원 비과세 가능)</option>
                   </select>
                 </div>
                 <div className="form-group">
@@ -732,100 +766,283 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
             </>
           )}
 
-          {/* TAB 3: 4대보험 & 이중신고 & 비과세 */}
-          {modalTab === 'insurance' && (
-            <>
-              {/* Dual Reporting Structure */}
-              <div style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '16px', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <h4 style={{ fontSize: '14px', fontWeight: '700', color: '#60a5fa' }}>
-                    ⚡ 4대보험 이중신고 구조 (관리자 전용 설정)
-                  </h4>
-                  <label className="form-check">
-                    <input 
-                      type="checkbox" 
-                      checked={formData.is_dual_reporting === 1} 
-                      onChange={(e) => setFormData({ ...formData, is_dual_reporting: e.target.checked ? 1 : 0 })} 
-                    />
-                    <span style={{ fontWeight: '700' }}>이중신고 구조 On</span>
-                  </label>
-                </div>
 
-                {formData.is_dual_reporting === 1 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label className="form-label">별도 4대보험 신고기준액 *</label>
-                        <input 
-                          type="number" 
-                          step="10000" 
-                          className="form-input" 
-                          value={formData.reported_salary} 
-                          onChange={(e) => setFormData({ ...formData, reported_salary: parseInt(e.target.value) || 0 })} 
-                          placeholder="2500000" 
-                        />
+          {/* TAB 3: 4대보험 & 세금 & 이중신고 & 비과세 */}
+          {modalTab === 'insurance' && (() => {
+            const rrnVal = formData.rrn || (editingEmployee ? editingEmployee.rrn_masked : '');
+            const clean = (rrnVal || '').replace(/[^0-9]/g, '');
+            let empAge = null;
+            if (clean.length >= 7) {
+              const yy = parseInt(clean.substring(0, 2), 10);
+              const mm = parseInt(clean.substring(2, 4), 10);
+              const g = parseInt(clean.charAt(6), 10);
+              let bYear = 1900 + yy;
+              if (g === 3 || g === 4 || g === 7 || g === 8) bYear = 2000 + yy;
+              else if (g === 9 || g === 0) bYear = 1800 + yy;
+              empAge = 2026 - bYear;
+              if (7 < mm) empAge -= 1;
+            }
+            const isPensionExempt = empAge !== null && empAge >= 60;
+            const isEmploymentExempt = empAge !== null && empAge >= 65;
+
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* 1. 4대보험 개별 선택 섹션 */}
+                <div style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)', padding: '16px', borderRadius: 'var(--radius-md)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                    <h4 style={{ fontSize: '14px', fontWeight: '700', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                      🛡️ 4대보험 가입 및 공제 선택
+                    </h4>
+                    {empAge !== null && (
+                      <span className="badge badge-primary" style={{ fontSize: '11.5px', padding: '3px 8px' }}>
+                        현재 나이: <strong>만 {empAge}세</strong>
+                      </span>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {/* 국민연금 */}
+                    <div style={{ padding: '10px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', border: isPensionExempt ? '1px solid rgba(245,158,11,0.4)' : '1px solid var(--border-subtle)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                        <label className="form-check" style={{ margin: 0 }}>
+                          <input 
+                            type="checkbox" 
+                            checked={formData.ins_national_pension === 1} 
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              if (checked && isPensionExempt) {
+                                alert(`[안내] 이 직원은 현재 만 ${empAge}세로 국민연금 의무가입 대상(만 60세 미만)에서 제외됩니다.\n본인 희망 시 '임의계속가입'으로 가입할 수 있습니다.`);
+                              }
+                              setFormData({ ...formData, ins_national_pension: checked ? 1 : 0 });
+                            }} 
+                          />
+                          <span style={{ fontWeight: '700', color: '#fff' }}>국민연금 (4.5% 공제)</span>
+                        </label>
+                        {isPensionExempt && (
+                          <span className="badge badge-warning" style={{ fontSize: '11px' }}>
+                            ⚠️ 만 60세 이상 (의무가입 제외)
+                          </span>
+                        )}
                       </div>
-                      <div className="form-group">
-                        <label className="form-label">미신고차액 원천공제율 (%)</label>
-                        <input 
-                          type="number" 
-                          step="0.5" 
-                          className="form-input" 
-                          value={formData.withholding_rate} 
-                          onChange={(e) => setFormData({ ...formData, withholding_rate: parseFloat(e.target.value) || 10 })} 
-                        />
+                      {isPensionExempt && (
+                        <div style={{ fontSize: '11.5px', color: '#fbbf24', marginTop: '6px', paddingLeft: '24px' }}>
+                          💡 만 60세 이상은 국민연금 의무가입 대상에서 제외됩니다. (체크 해제 시 연금보험료 0원 처리)
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 건강보험 & 장기요양보험 */}
+                    <div style={{ padding: '10px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                        <label className="form-check" style={{ margin: 0 }}>
+                          <input 
+                            type="checkbox" 
+                            checked={formData.ins_health === 1} 
+                            onChange={(e) => setFormData({ 
+                              ...formData, 
+                              ins_health: e.target.checked ? 1 : 0,
+                              ins_longterm_care: e.target.checked ? formData.ins_longterm_care : 0 
+                            })} 
+                          />
+                          <span style={{ fontWeight: '700', color: '#fff' }}>건강보험 (3.545% 공제)</span>
+                        </label>
+                        <label className="form-check" style={{ margin: 0 }}>
+                          <input 
+                            type="checkbox" 
+                            checked={formData.ins_longterm_care === 1} 
+                            onChange={(e) => setFormData({ ...formData, ins_longterm_care: e.target.checked ? 1 : 0 })}
+                            disabled={formData.ins_health === 0}
+                          />
+                          <span style={{ fontWeight: '600', color: formData.ins_health === 0 ? 'var(--text-muted)' : '#cbd5e1' }}>
+                            장기요양보험 (건보료의 12.95%)
+                          </span>
+                        </label>
                       </div>
                     </div>
 
-                    <div className="form-group">
-                      <label className="form-label">급여명세서 표시 방식</label>
-                      <select 
-                        className="form-select"
-                        value={formData.payslip_display_mode}
-                        onChange={(e) => setFormData({ ...formData, payslip_display_mode: e.target.value })}
-                      >
-                        <option value="SPLIT_PAY">사업자통장 지급분 / 개인통장 지급분 2줄 분리 표시</option>
-                        <option value="SINGLE_DEDUCTION">공제내역에 '미신고공제' 단일 항목 한 줄 처리</option>
-                      </select>
+                    {/* 고용보험 */}
+                    <div style={{ padding: '10px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', border: isEmploymentExempt ? '1px solid rgba(245,158,11,0.4)' : '1px solid var(--border-subtle)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                        <label className="form-check" style={{ margin: 0 }}>
+                          <input 
+                            type="checkbox" 
+                            checked={formData.ins_employment === 1} 
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              if (checked && isEmploymentExempt) {
+                                alert(`[안내] 이 직원은 현재 만 ${empAge}세로 만 65세 이후 신규 채용된 경우 고용보험(실업급여) 적용제외 대상입니다.`);
+                              }
+                              setFormData({ ...formData, ins_employment: checked ? 1 : 0 });
+                            }} 
+                          />
+                          <span style={{ fontWeight: '700', color: '#fff' }}>고용보험 (0.9% 공제)</span>
+                        </label>
+                        {isEmploymentExempt && (
+                          <span className="badge badge-warning" style={{ fontSize: '11px' }}>
+                            ⚠️ 만 65세 이상 (실업급여 적용제외)
+                          </span>
+                        )}
+                      </div>
+                      {isEmploymentExempt && (
+                        <div style={{ fontSize: '11.5px', color: '#fbbf24', marginTop: '6px', paddingLeft: '24px' }}>
+                          💡 만 65세 이후 신규 고용된 직원은 실업급여 적용제외 대상입니다. (체크 해제 시 고용보험료 0원 처리)
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 산재보험 */}
+                    <div style={{ padding: '10px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+                      <label className="form-check" style={{ margin: 0 }}>
+                        <input 
+                          type="checkbox" 
+                          checked={formData.ins_work_accident === 1} 
+                          onChange={(e) => setFormData({ ...formData, ins_work_accident: e.target.checked ? 1 : 0 })} 
+                        />
+                        <span style={{ fontWeight: '700', color: '#fff' }}>산재보험 (사업주 전액부담 / 0.9%)</span>
+                      </label>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', paddingLeft: '24px' }}>
+                        * 근로자 급여에서 공제되지 않으며 매장 사업주가 100% 부담합니다.
+                      </div>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
 
-              {/* Non-Taxable Settings */}
-              <div style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)', padding: '16px', borderRadius: 'var(--radius-md)' }}>
-                <h4 style={{ fontSize: '14px', fontWeight: '700', color: '#fff', marginBottom: '12px' }}>
-                  비과세 항목 적용 여부
-                </h4>
+                {/* 2. 소득세 / 지방소득세 원천징수 선택 섹션 */}
+                <div style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)', padding: '16px', borderRadius: 'var(--radius-md)' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '700', color: '#fff', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                    💰 근로소득세 및 지방소득세 원천징수 설정
+                  </h4>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <label className="form-check" style={{ opacity: 0.6, cursor: 'not-allowed' }}>
-                    <input type="checkbox" checked={false} disabled />
-                    <span>식대 비과세 (회사에서 식사를 제공하므로 전사 공통 OFF 비활성화)</span>
-                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
+                    <div style={{ padding: '10px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+                      <label className="form-check" style={{ margin: 0 }}>
+                        <input 
+                          type="checkbox" 
+                          checked={formData.deduct_income_tax === 1} 
+                          onChange={(e) => setFormData({ 
+                            ...formData, 
+                            deduct_income_tax: e.target.checked ? 1 : 0,
+                            deduct_local_tax: e.target.checked ? formData.deduct_local_tax : 0 
+                          })} 
+                        />
+                        <span style={{ fontWeight: '700', color: '#fff' }}>소득세 원천징수</span>
+                      </label>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', paddingLeft: '24px' }}>
+                        국세청 간이세액표 기준 자동 산출 (월 106만원 이하 면세)
+                      </div>
+                    </div>
 
-                  <label className="form-check">
-                    <input 
-                      type="checkbox" 
-                      checked={formData.non_taxable_car === 1} 
-                      onChange={(e) => setFormData({ ...formData, non_taxable_car: e.target.checked ? 1 : 0 })} 
-                      disabled={formData.has_car === 0}
-                    />
-                    <span>자가운전보조금 비과세 (월 20만원 한도, 자차 보유 직원 전용)</span>
-                  </label>
+                    <div style={{ padding: '10px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+                      <label className="form-check" style={{ margin: 0 }}>
+                        <input 
+                          type="checkbox" 
+                          checked={formData.deduct_local_tax === 1} 
+                          onChange={(e) => setFormData({ ...formData, deduct_local_tax: e.target.checked ? 1 : 0 })}
+                          disabled={formData.deduct_income_tax === 0}
+                        />
+                        <span style={{ fontWeight: '700', color: formData.deduct_income_tax === 0 ? 'var(--text-muted)' : '#fff' }}>
+                          지방소득세 원천징수 (10%)
+                        </span>
+                      </label>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', paddingLeft: '24px' }}>
+                        소득세의 10% (10원 단위 절사) 자동 산출
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-                  <label className="form-check">
-                    <input 
-                      type="checkbox" 
-                      checked={formData.non_taxable_overtime === 1} 
-                      onChange={(e) => setFormData({ ...formData, non_taxable_overtime: e.target.checked ? 1 : 0 })} 
-                    />
-                    <span>조리/생산직 연장·야간·휴일수당 비과세 (월정액급여 210만원 이하, 연 240만원 한도)</span>
-                  </label>
+                {/* 3. Dual Reporting Structure */}
+                <div style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '16px', borderRadius: 'var(--radius-md)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <h4 style={{ fontSize: '14px', fontWeight: '700', color: '#60a5fa', margin: 0 }}>
+                      ⚡ 4대보험 이중신고 구조 (관리자 전용 설정)
+                    </h4>
+                    <label className="form-check" style={{ margin: 0 }}>
+                      <input 
+                        type="checkbox" 
+                        checked={formData.is_dual_reporting === 1} 
+                        onChange={(e) => setFormData({ ...formData, is_dual_reporting: e.target.checked ? 1 : 0 })} 
+                      />
+                      <span style={{ fontWeight: '700' }}>이중신고 구조 On</span>
+                    </label>
+                  </div>
+
+                  {formData.is_dual_reporting === 1 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '10px' }}>
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label className="form-label">별도 4대보험 신고기준액 *</label>
+                          <input 
+                            type="number" 
+                            step="10000" 
+                            className="form-input" 
+                            value={formData.reported_salary} 
+                            onChange={(e) => setFormData({ ...formData, reported_salary: parseInt(e.target.value) || 0 })} 
+                            placeholder="2500000" 
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">미신고차액 원천공제율 (%)</label>
+                          <input 
+                            type="number" 
+                            step="0.5" 
+                            className="form-input" 
+                            value={formData.withholding_rate} 
+                            onChange={(e) => setFormData({ ...formData, withholding_rate: parseFloat(e.target.value) || 10 })} 
+                          />
+                        </div>
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">급여명세서 표시 방식</label>
+                        <select 
+                          className="form-select"
+                          value={formData.payslip_display_mode}
+                          onChange={(e) => setFormData({ ...formData, payslip_display_mode: e.target.value })}
+                        >
+                          <option value="SPLIT_PAY">사업자통장 지급분 / 개인통장 지급분 2줄 분리 표시</option>
+                          <option value="SINGLE_DEDUCTION">공제내역에 '미신고공제' 단일 항목 한 줄 처리</option>
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 4. Non-Taxable Settings */}
+                <div style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)', padding: '16px', borderRadius: 'var(--radius-md)' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '700', color: '#fff', marginBottom: '12px', margin: 0 }}>
+                    비과세 항목 적용 여부
+                  </h4>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
+                    <label className="form-check" style={{ opacity: 0.6, cursor: 'not-allowed', margin: 0 }}>
+                      <input type="checkbox" checked={false} disabled />
+                      <span>식대 비과세 (회사에서 식사를 제공하므로 전사 공통 OFF 비활성화)</span>
+                    </label>
+
+                    <label className="form-check" style={{ margin: 0 }}>
+                      <input 
+                        type="checkbox" 
+                        checked={formData.non_taxable_car === 1} 
+                        onChange={(e) => setFormData({ ...formData, non_taxable_car: e.target.checked ? 1 : 0 })} 
+                        disabled={formData.has_car === 0}
+                      />
+                      <span>자가운전보조금 비과세 (월 20만원 한도, 자차 보유 직원 전용)</span>
+                    </label>
+
+                    <label className="form-check" style={{ margin: 0 }}>
+                      <input 
+                        type="checkbox" 
+                        checked={formData.non_taxable_overtime === 1} 
+                        onChange={(e) => setFormData({ ...formData, non_taxable_overtime: e.target.checked ? 1 : 0 })} 
+                      />
+                      <span>조리/생산직 연장·야간·휴일수당 비과세 (월정액급여 210만원 이하, 연 240만원 한도)</span>
+                    </label>
+                  </div>
                 </div>
               </div>
-            </>
-          )}
+            );
+          })()}
 
           {/* TAB 4: ACCOUNT & OTHERS */}
           {modalTab === 'account' && (

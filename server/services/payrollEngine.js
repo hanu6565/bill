@@ -793,6 +793,28 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
     }
   }
 
+  // 개별 4대보험 및 소득세/지방소득세 선택 설정 적용
+  if (employee.ins_national_pension === 0 || employee.tax_exempt_social_ins === 0) {
+    nationalPension = 0;
+  }
+  if (employee.ins_health === 0 || employee.tax_exempt_social_ins === 0) {
+    healthInsurance = 0;
+    longtermCare = 0;
+  }
+  if (employee.ins_longterm_care === 0) {
+    longtermCare = 0;
+  }
+  if (employee.ins_employment === 0 || employee.tax_exempt_social_ins === 0) {
+    employmentInsurance = 0;
+  }
+  if (employee.deduct_income_tax === 0 || employee.tax_exempt_income_tax === 0) {
+    incomeTax = 0;
+    localIncomeTax = 0;
+  }
+  if (employee.deduct_local_tax === 0) {
+    localIncomeTax = 0;
+  }
+
   // 7. Unreported Difference Deduction (미신고공제: 미신고차액 × 공제율 10%)
   if (employee.is_dual_reporting === 1) {
     let calcReportedBase = reportedBase;

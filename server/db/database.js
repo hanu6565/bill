@@ -145,6 +145,13 @@ export async function initDatabase() {
       non_taxable_overtime INTEGER DEFAULT 0,
       tax_exempt_income_tax INTEGER DEFAULT 1,
       tax_exempt_social_ins INTEGER DEFAULT 1,
+      ins_national_pension INTEGER DEFAULT 1,
+      ins_health INTEGER DEFAULT 1,
+      ins_longterm_care INTEGER DEFAULT 1,
+      ins_employment INTEGER DEFAULT 1,
+      ins_work_accident INTEGER DEFAULT 1,
+      deduct_income_tax INTEGER DEFAULT 1,
+      deduct_local_tax INTEGER DEFAULT 1,
       ordinary_wage_items TEXT,
       payslip_display_mode TEXT DEFAULT 'STANDARD',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -321,6 +328,13 @@ export async function initDatabase() {
     if (!eNames.includes('non_taxable_overtime')) await exec("ALTER TABLE employees ADD COLUMN non_taxable_overtime INTEGER DEFAULT 0;");
     if (!eNames.includes('tax_exempt_income_tax')) await exec("ALTER TABLE employees ADD COLUMN tax_exempt_income_tax INTEGER DEFAULT 1;");
     if (!eNames.includes('tax_exempt_social_ins')) await exec("ALTER TABLE employees ADD COLUMN tax_exempt_social_ins INTEGER DEFAULT 1;");
+    if (!eNames.includes('ins_national_pension')) await exec("ALTER TABLE employees ADD COLUMN ins_national_pension INTEGER DEFAULT 1;");
+    if (!eNames.includes('ins_health')) await exec("ALTER TABLE employees ADD COLUMN ins_health INTEGER DEFAULT 1;");
+    if (!eNames.includes('ins_longterm_care')) await exec("ALTER TABLE employees ADD COLUMN ins_longterm_care INTEGER DEFAULT 1;");
+    if (!eNames.includes('ins_employment')) await exec("ALTER TABLE employees ADD COLUMN ins_employment INTEGER DEFAULT 1;");
+    if (!eNames.includes('ins_work_accident')) await exec("ALTER TABLE employees ADD COLUMN ins_work_accident INTEGER DEFAULT 1;");
+    if (!eNames.includes('deduct_income_tax')) await exec("ALTER TABLE employees ADD COLUMN deduct_income_tax INTEGER DEFAULT 1;");
+    if (!eNames.includes('deduct_local_tax')) await exec("ALTER TABLE employees ADD COLUMN deduct_local_tax INTEGER DEFAULT 1;");
     if (!eNames.includes('ordinary_wage_items')) await exec("ALTER TABLE employees ADD COLUMN ordinary_wage_items TEXT;");
     if (!eNames.includes('payslip_display_mode')) await exec("ALTER TABLE employees ADD COLUMN payslip_display_mode TEXT DEFAULT 'STANDARD';");
 
