@@ -95,6 +95,8 @@ export const api = {
   confirmPayroll: (runId) => request('/payroll/confirm', { method: 'POST', body: JSON.stringify({ run_id: runId }) }),
   reopenPayroll: (runId, reason) => request('/payroll/reopen', { method: 'POST', body: JSON.stringify({ run_id: runId, reason }) }),
   getPayrollHistory: (storeId) => request(`/payroll/history${storeId ? `?store_id=${storeId}` : ''}`),
+  getWorkPatterns: () => request('/payroll/work-patterns'),
+  calculateHourlyBreakdown: (data) => request('/payroll/calculate-hourly-breakdown', { method: 'POST', body: JSON.stringify(data) }),
 
   // Settings & Holidays
   getSettings: () => request('/settings'),

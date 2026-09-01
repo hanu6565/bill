@@ -548,4 +548,23 @@ router.get('/history', async (req, res) => {
   }
 });
 
+// GET /api/payroll/work-patterns (근무 패턴 프리셋 목록)
+router.get('/work-patterns', (req, res) => {
+  import('../services/hourlyWageCalculator.js').then(({ WORK_PATTERN_PRESETS }) => {
+    res.json({ success: true, presets: WORK_PATTERN_PRESETS });
+  }).catch(err => {
+    res.status(500).json({ success: false, message: err.message });
+  });
+});
+
+// POST /api/payroll/calculate-hourly-breakdown (시급계산기 & 포괄임금 역산 시뮬레이터)
+router.post('/calculate-hourly-breakdown', (req, res) => {
+  import('../services/hourlyWageCalculator.js').then(({ calculateHourlyWageBreakdown }) => {
+    const result = calculateHourlyWageBreakdown(req.body);
+    res.json({ success: true, ...result });
+  }).catch(err => {
+    res.status(500).json({ success: false, message: err.message });
+  });
+});
+
 export default router;

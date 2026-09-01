@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, Plus, Edit2, Trash2, Eye, EyeOff, ShieldCheck, 
-  AlertTriangle, Car, CreditCard, Building, Calendar, DollarSign 
+  AlertTriangle, Car, CreditCard, Building, Calendar, DollarSign, Calculator 
 } from 'lucide-react';
 import api from '../services/api';
 import Modal from '../components/Modal';
+import HourlyWageCalculatorModal from '../components/HourlyWageCalculatorModal';
 
 export default function EmployeeManagement({ stores, currentStoreId, setCurrentStoreId }) {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
 
   // Unmask RRN State
@@ -259,9 +261,19 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
             매장별 직원의 인적사항, 급여 방식(월급/시급), 4대보험 이중신고 구조 및 수습기간을 설정합니다.
           </p>
         </div>
-        <button type="button" className="btn btn-primary" onClick={openCreateModal}>
-          <Plus size={16} /> 신규 직원 등록
-        </button>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button 
+            type="button" 
+            className="btn btn-secondary" 
+            onClick={() => setIsCalculatorOpen(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid rgba(59, 130, 246, 0.4)' }}
+          >
+            <Calculator size={16} color="#60a5fa" /> 📊 엑셀 시급계산기 & 포괄시급 역산기
+          </button>
+          <button type="button" className="btn btn-primary" onClick={openCreateModal}>
+            <Plus size={16} /> 신규 직원 등록
+          </button>
+        </div>
       </div>
 
       {/* Employees Table */}
@@ -610,6 +622,26 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
           {/* TAB 2: WAGE & PROBATION */}
           {modalTab === 'wage' && (
             <>
+              {/* Hourly Wage Calculator Shortcut Banner */}
+              <div style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '12px 16px', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                <div>
+                  <div style={{ fontWeight: '700', color: '#60a5fa', fontSize: '13.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Calculator size={16} /> 📊 엑셀 시급계산기 & 포괄수당 자동 분할기
+                  </div>
+                  <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    9.5시간 6일 / 9시간 6일 / 4.5시간 파트 등 표준 패턴에 맞춰 통상시급과 수당을 1초 만에 자동 계산합니다.
+                  </div>
+                </div>
+                <button 
+                  type="button" 
+                  className="btn btn-sm btn-primary"
+                  onClick={() => setIsCalculatorOpen(true)}
+                  style={{ whiteSpace: 'nowrap' }}
+                >
+                  시급계산기 열기
+                </button>
+              </div>
+
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">급여방식 선택 (매장 기본값 오버라이드 가능)</label>
@@ -1095,6 +1127,19 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
           )}
         </form>
       </Modal>
+
+      {/* Hourly Wage & Package Wage Calculator Modal */}
+      <HourlyWageCalculatorModal 
+        isOpen={isCalculatorOpen}
+        onClose={() => setIsCalculatorOpen(false)}
+        initialData={formData}
+        onApplyToEmployee={(vals) => {
+          setFormData(prev => ({
+            ...prev,
+            ...vals
+          }));
+        }}
+      />
     </div>
   );
 }
