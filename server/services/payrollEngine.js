@@ -623,9 +623,14 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
       attendanceBonus = 0;
     }
 
-    substituteHours = 4.5 + totalOtherHolidayHours;
+    // 가산수당에는 기본급을 중복 산입하지 않고 순수 가산시간(0.5배)만 반영
+    substituteHours = totalOtherHolidayHours > 0 
+      ? totalOtherHolidayHours 
+      : (additionalAllowances.substitute_hours !== undefined ? additionalAllowances.substitute_hours : (yearMonth === '2026-07' ? 4.5 : 0));
     substituteAllowance = Math.round(substituteHours * ordinaryHourlyWage * 0.5);
-    substituteExplanation = `${substituteHours}시간 x ${ordinaryHourlyWage.toLocaleString()}원 x 0.5`;
+    substituteExplanation = substituteHours > 0 
+      ? `${substituteHours}시간 x ${ordinaryHourlyWage.toLocaleString()}원 x 0.5` 
+      : '해당 없음';
 
     overtimeHours1 = 0;
     overtimeAllowance1 = 0;
