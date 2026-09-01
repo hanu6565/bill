@@ -14,9 +14,11 @@
     "postinstall": "npm --prefix client install",
     "build": "npm --prefix client install && npm --prefix client run build",
     "test": "node --test server/tests/payrollEngine.test.js",
-    "seed": "node server/db/seeds.js"
+    "seed": "node server/db/seeds.js",
+    "supabase:sync": "node server/db/syncToSupabase.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.112.4",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
