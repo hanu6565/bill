@@ -246,7 +246,7 @@ export default function AttendanceManagement({ stores, currentStoreId, setCurren
     for (let d = 1; d <= totalDays; d++) {
       const dStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       
-      // 1) 입사일 이전이거나 퇴사일 이후인 날짜는 자동으로 미근무(휴무)로 지정
+      // 입사일 이전이거나 퇴사일 이후인 날짜만 자동으로 미근무(휴무)로 지정
       if (hireDate && dStr < hireDate) {
         initialOffs.add(dStr);
         continue;
@@ -254,12 +254,6 @@ export default function AttendanceManagement({ stores, currentStoreId, setCurren
       if (resignDate && dStr > resignDate) {
         initialOffs.add(dStr);
         continue;
-      }
-
-      // 2) 일반 재직 기간 중 기본 주휴무일 (예: 일요일/월요일)
-      const dayOfWeek = new Date(dStr).getDay();
-      if (dayOfWeek === 0 || dayOfWeek === 1) {
-        initialOffs.add(dStr);
       }
     }
     setQuickOffDates(initialOffs);
