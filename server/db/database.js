@@ -125,6 +125,9 @@ export async function initDatabase() {
       reported_salary INTEGER DEFAULT 0,
       reported_hourly_wage INTEGER DEFAULT 0,
       dual_reporting_memo TEXT,
+      withholding_rate REAL DEFAULT 10.0,
+      contract_duration_type TEXT DEFAULT 'ONE_YEAR_OR_MORE',
+      is_simple_labor INTEGER DEFAULT 0,
       probation_applicable INTEGER DEFAULT 0,
       probation_start_date DATE,
       probation_end_date DATE,
@@ -136,6 +139,7 @@ export async function initDatabase() {
       visa_type TEXT,
       fixed_work_hours TEXT,
       has_car INTEGER DEFAULT 0,
+      notes TEXT,
       non_taxable_meal INTEGER DEFAULT 0,
       non_taxable_car INTEGER DEFAULT 0,
       non_taxable_overtime INTEGER DEFAULT 0,
@@ -156,11 +160,16 @@ export async function initDatabase() {
       clock_out TEXT,
       break_minutes INTEGER DEFAULT 60,
       net_work_hours REAL DEFAULT 0,
+      day_type TEXT,
       regular_hours REAL DEFAULT 0,
       overtime_hours REAL DEFAULT 0,
       night_hours REAL DEFAULT 0,
       holiday_hours REAL DEFAULT 0,
       public_holiday_hours REAL DEFAULT 0,
+      holiday_hours_under8 REAL DEFAULT 0,
+      holiday_hours_over8 REAL DEFAULT 0,
+      public_holiday_hours_under8 REAL DEFAULT 0,
+      public_holiday_hours_over8 REAL DEFAULT 0,
       is_absent INTEGER DEFAULT 0,
       is_unpaid_leave INTEGER DEFAULT 0,
       is_annual_leave INTEGER DEFAULT 0,
@@ -183,8 +192,10 @@ export async function initDatabase() {
       total_deductions INTEGER DEFAULT 0,
       total_net_pay INTEGER DEFAULT 0,
       confirmed_at DATETIME,
-      confirmed_by INTEGER,
+      confirmed_by TEXT,
       reopen_reason TEXT,
+      reopened_at DATETIME,
+      reopened_reason TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE,
@@ -258,6 +269,15 @@ export async function initDatabase() {
       description TEXT,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`,
+    `CREATE TABLE IF NOT EXISTS audit_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      action TEXT NOT NULL,
+      entity_type TEXT NOT NULL,
+      entity_id INTEGER,
+      details TEXT,
+      performed_by TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`,
     `CREATE INDEX IF NOT EXISTS idx_emp_store ON employees(store_id)`,
     `CREATE INDEX IF NOT EXISTS idx_att_date ON attendance(work_date)`,
     `CREATE INDEX IF NOT EXISTS idx_att_emp_date ON attendance(employee_id, work_date)`,
@@ -284,19 +304,35 @@ export async function initDatabase() {
     if (!eNames.includes('account_number')) await exec("ALTER TABLE employees ADD COLUMN account_number TEXT;");
     if (!eNames.includes('fixed_work_hours')) await exec("ALTER TABLE employees ADD COLUMN fixed_work_hours TEXT;");
     if (!eNames.includes('has_car')) await exec("ALTER TABLE employees ADD COLUMN has_car INTEGER DEFAULT 0;");
+    if (!eNames.includes('notes')) await exec("ALTER TABLE employees ADD COLUMN notes TEXT;");
     if (!eNames.includes('is_dual_reporting')) await exec("ALTER TABLE employees ADD COLUMN is_dual_reporting INTEGER DEFAULT 0;");
     if (!eNames.includes('reported_salary')) await exec("ALTER TABLE employees ADD COLUMN reported_salary INTEGER DEFAULT 0;");
+    if (!eNames.includes('reported_hourly_wage')) await exec("ALTER TABLE employees ADD COLUMN reported_hourly_wage INTEGER DEFAULT 0;");
+    if (!eNames.includes('dual_reporting_memo')) await exec("ALTER TABLE employees ADD COLUMN dual_reporting_memo TEXT;");
+    if (!eNames.includes('withholding_rate')) await exec("ALTER TABLE employees ADD COLUMN withholding_rate REAL DEFAULT 10.0;");
+    if (!eNames.includes('contract_duration_type')) await exec("ALTER TABLE employees ADD COLUMN contract_duration_type TEXT DEFAULT 'ONE_YEAR_OR_MORE';");
+    if (!eNames.includes('is_simple_labor')) await exec("ALTER TABLE employees ADD COLUMN is_simple_labor INTEGER DEFAULT 0;");
     if (!eNames.includes('probation_applicable')) await exec("ALTER TABLE employees ADD COLUMN probation_applicable INTEGER DEFAULT 0;");
+    if (!eNames.includes('probation_start_date')) await exec("ALTER TABLE employees ADD COLUMN probation_start_date DATE;");
+    if (!eNames.includes('probation_end_date')) await exec("ALTER TABLE employees ADD COLUMN probation_end_date DATE;");
     if (!eNames.includes('probation_rate')) await exec("ALTER TABLE employees ADD COLUMN probation_rate REAL DEFAULT 90.0;");
     if (!eNames.includes('non_taxable_meal')) await exec("ALTER TABLE employees ADD COLUMN non_taxable_meal INTEGER DEFAULT 0;");
     if (!eNames.includes('non_taxable_car')) await exec("ALTER TABLE employees ADD COLUMN non_taxable_car INTEGER DEFAULT 0;");
     if (!eNames.includes('non_taxable_overtime')) await exec("ALTER TABLE employees ADD COLUMN non_taxable_overtime INTEGER DEFAULT 0;");
+    if (!eNames.includes('tax_exempt_income_tax')) await exec("ALTER TABLE employees ADD COLUMN tax_exempt_income_tax INTEGER DEFAULT 1;");
+    if (!eNames.includes('tax_exempt_social_ins')) await exec("ALTER TABLE employees ADD COLUMN tax_exempt_social_ins INTEGER DEFAULT 1;");
     if (!eNames.includes('ordinary_wage_items')) await exec("ALTER TABLE employees ADD COLUMN ordinary_wage_items TEXT;");
     if (!eNames.includes('payslip_display_mode')) await exec("ALTER TABLE employees ADD COLUMN payslip_display_mode TEXT DEFAULT 'STANDARD';");
+
     const attCols = await query("PRAGMA table_info(attendance)");
     const aNames = attCols.map(c => c.name);
+    if (!aNames.includes('day_type')) await exec("ALTER TABLE attendance ADD COLUMN day_type TEXT;");
     if (!aNames.includes('holiday_hours')) await exec("ALTER TABLE attendance ADD COLUMN holiday_hours REAL DEFAULT 0;");
     if (!aNames.includes('public_holiday_hours')) await exec("ALTER TABLE attendance ADD COLUMN public_holiday_hours REAL DEFAULT 0;");
+    if (!aNames.includes('holiday_hours_under8')) await exec("ALTER TABLE attendance ADD COLUMN holiday_hours_under8 REAL DEFAULT 0;");
+    if (!aNames.includes('holiday_hours_over8')) await exec("ALTER TABLE attendance ADD COLUMN holiday_hours_over8 REAL DEFAULT 0;");
+    if (!aNames.includes('public_holiday_hours_under8')) await exec("ALTER TABLE attendance ADD COLUMN public_holiday_hours_under8 REAL DEFAULT 0;");
+    if (!aNames.includes('public_holiday_hours_over8')) await exec("ALTER TABLE attendance ADD COLUMN public_holiday_hours_over8 REAL DEFAULT 0;");
     if (!aNames.includes('is_public_holiday')) await exec("ALTER TABLE attendance ADD COLUMN is_public_holiday INTEGER DEFAULT 0;");
     if (!aNames.includes('is_weekly_holiday')) await exec("ALTER TABLE attendance ADD COLUMN is_weekly_holiday INTEGER DEFAULT 0;");
     if (!aNames.includes('is_annual_leave')) await exec("ALTER TABLE attendance ADD COLUMN is_annual_leave INTEGER DEFAULT 0;");
@@ -315,7 +351,11 @@ export async function initDatabase() {
     const runCols = await query("PRAGMA table_info(payroll_runs)");
     const rNames = runCols.map(c => c.name);
     if (!rNames.includes('snapshot_rates')) await exec("ALTER TABLE payroll_runs ADD COLUMN snapshot_rates TEXT;");
-  } catch (e) {}
+    if (!rNames.includes('reopened_at')) await exec("ALTER TABLE payroll_runs ADD COLUMN reopened_at DATETIME;");
+    if (!rNames.includes('reopened_reason')) await exec("ALTER TABLE payroll_runs ADD COLUMN reopened_reason TEXT;");
+  } catch (e) {
+    console.error('Migration error:', e);
+  }
 
   console.log('✅ SQLite Database schema initialized successfully.');
 }

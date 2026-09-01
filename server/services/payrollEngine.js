@@ -312,7 +312,11 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
   let totalOvertimeHours = 0;
   let totalNightHours = 0;
   let totalHolidayHours = 0;
+  let totalHolidayHoursUnder8 = 0;
+  let totalHolidayHoursOver8 = 0;
   let totalPubHolidayHours = 0;
+  let totalPubHolidayHoursUnder8 = 0;
+  let totalPubHolidayHoursOver8 = 0;
   let absentDays = 0;
   let unpaidLeaveDays = 0;
   let annualLeaveDays = 0;
@@ -343,8 +347,17 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
       totalRegularHours += (att.regular_hours || 0);
       totalOvertimeHours += (att.overtime_hours || 0);
       totalNightHours += (att.night_hours || 0);
-      totalHolidayHours += (att.holiday_hours_under8 || 0) + (att.holiday_hours_over8 || 0);
-      totalPubHolidayHours += (att.public_holiday_hours_under8 || 0) + (att.public_holiday_hours_over8 || 0);
+      const hUnder8 = att.holiday_hours_under8 !== undefined ? (att.holiday_hours_under8 || 0) : (att.holiday_hours || 0);
+      const hOver8 = att.holiday_hours_over8 || 0;
+      totalHolidayHoursUnder8 += hUnder8;
+      totalHolidayHoursOver8 += hOver8;
+      totalHolidayHours += (hUnder8 + hOver8);
+
+      const phUnder8 = att.public_holiday_hours_under8 !== undefined ? (att.public_holiday_hours_under8 || 0) : (att.public_holiday_hours || 0);
+      const phOver8 = att.public_holiday_hours_over8 || 0;
+      totalPubHolidayHoursUnder8 += phUnder8;
+      totalPubHolidayHoursOver8 += phOver8;
+      totalPubHolidayHours += (phUnder8 + phOver8);
 
       const d = new Date(att.work_date);
       const dayOfWeek = d.getDay();
@@ -604,8 +617,8 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
       : '연장근로수당: 해당 없음 (0원)';
 
     nightAllowance = Math.round(ordinaryHourlyWage * 0.5 * totalNightHours);
-    holidayAllowance = Math.round(ordinaryHourlyWage * 1.5 * totalHolidayHours);
-    publicHolidayAllowance = Math.round(ordinaryHourlyWage * 1.5 * totalPubHolidayHours);
+    holidayAllowance = Math.round(ordinaryHourlyWage * (totalHolidayHoursUnder8 * 1.5 + totalHolidayHoursOver8 * 2.0));
+    publicHolidayAllowance = Math.round(ordinaryHourlyWage * (totalPubHolidayHoursUnder8 * 1.5 + totalPubHolidayHoursOver8 * 2.0));
 
     for (const [wk, hrs] of Object.entries(weeklyHoursMap)) {
       if (hrs >= 15) {
