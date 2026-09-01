@@ -293,79 +293,44 @@ export default function PayslipView({ stores, currentStoreId }) {
                           </>
                         ) : (
                           <>
-                            {(isKimHoon || isJungYongJu || specPay > 0) && (
+                            {specPay > 0 && (
                               <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                                 <td style={{ padding: '5px 6px', color: '#000000', background: '#ffffff' }}>특근수당</td>
                                 <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{specPay.toLocaleString()}</td>
                               </tr>
                             )}
-                            {(bonusPay > 0 || isJungYongJu) && (
+                            {bonusPay > 0 && (
                               <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                                 <td style={{ padding: '5px 6px', color: '#000000', background: '#ffffff' }}>상여금</td>
                                 <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{bonusPay.toLocaleString()}</td>
                               </tr>
                             )}
-                            {pubHolidayPay > 0 && (
-                              <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                <td style={{ padding: '5px 6px', color: '#000000', background: '#ffffff' }}>공휴일근로수당 (5/1)</td>
-                                <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{pubHolidayPay.toLocaleString()}</td>
-                              </tr>
-                            )}
-                            {isKimHyeSook ? (
-                              <>
-                                <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                  <td style={{ padding: '5px 6px', color: '#000000', background: '#ffffff' }}>연차수당</td>
-                                  <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{annualPay.toLocaleString()}</td>
-                                </tr>
-                                <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                  <td style={{ padding: '5px 6px', color: '#000000', background: '#ffffff' }}>만근수당</td>
-                                  <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{attBonus.toLocaleString()}</td>
-                                </tr>
-                                <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                  <td style={{ padding: '5px 6px', color: '#000000', background: '#ffffff' }}>대체근로수당</td>
-                                  <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{subPay.toLocaleString()}</td>
-                                </tr>
-                                <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                  <td style={{ padding: '5px 6px', color: '#000000', background: '#ffffff' }}>연장근로수당 ①</td>
-                                  <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{ot1.toLocaleString()}</td>
-                                </tr>
-                                <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                  <td style={{ padding: '5px 6px', color: '#000000', background: '#ffffff' }}>연장근로수당 ②</td>
-                                  <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{ot2.toLocaleString()}</td>
-                                </tr>
-                              </>
-                            ) : (
-                              <>
-                                <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                  <td style={{ padding: '5px 6px', color: '#000000', background: '#ffffff' }}>연장근로수당 ①</td>
-                                  <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{ot1.toLocaleString()}</td>
-                                </tr>
-                                <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                  <td style={{ padding: '5px 6px', color: '#000000', background: '#ffffff' }}>연장근로수당 ②</td>
-                                  <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{ot2.toLocaleString()}</td>
-                                </tr>
-                                <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                  <td style={{ padding: '5px 6px', color: '#000000', background: '#ffffff' }}>연차수당</td>
-                                  <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{annualPay.toLocaleString()}</td>
-                                </tr>
-                                <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                  <td style={{ padding: '5px 6px', color: '#000000', background: '#ffffff' }}>만근수당</td>
-                                  <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{attBonus.toLocaleString()}</td>
-                                </tr>
-                                <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                  <td style={{ padding: '5px 6px', color: '#000000', background: '#ffffff' }}>대체근로수당</td>
-                                  <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{subPay.toLocaleString()}</td>
-                                </tr>
-                              </>
-                            )}
-                            {!isKimHoon && !isKimHyeSook && !isJungYongJu && specPay === 0 && (
-                              <>
-                                <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                  <td style={{ padding: '5px 6px', height: '22px', color: '#000000', background: '#ffffff' }}></td>
-                                  <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}></td>
-                                </tr>
-                              </>
-                            )}
+                            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                              <td style={{ padding: '5px 6px', color: '#000000', background: '#ffffff' }}>공휴일근로수당</td>
+                              <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>
+                                {pubHolidayPay > 0 ? pubHolidayPay.toLocaleString() : ''}
+                              </td>
+                            </tr>
+                            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                              <td style={{ padding: '5px 6px', color: '#000000', background: '#ffffff' }}>연장근로수당 ①</td>
+                              <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{ot1 > 0 ? ot1.toLocaleString() : ''}</td>
+                            </tr>
+                            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                              <td style={{ padding: '5px 6px', color: '#000000', background: '#ffffff' }}>연장근로수당 ②</td>
+                              <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{ot2 > 0 ? ot2.toLocaleString() : ''}</td>
+                            </tr>
+                            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                              <td style={{ padding: '5px 6px', color: '#000000', background: '#ffffff' }}>연차수당</td>
+                              <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{annualPay > 0 ? annualPay.toLocaleString() : ''}</td>
+                            </tr>
+                            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                              <td style={{ padding: '5px 6px', color: '#000000', background: '#ffffff' }}>만근수당</td>
+                              <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{attBonus > 0 ? attBonus.toLocaleString() : ''}</td>
+                            </tr>
+                            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                              <td style={{ padding: '5px 6px', color: '#000000', background: '#ffffff' }}>대체근로수당</td>
+                              <td style={{ padding: '5px 6px', textAlign: 'right', color: '#000000', background: '#ffffff' }}>{subPay > 0 ? subPay.toLocaleString() : ''}</td>
+                            </tr>
                           </>
                         )}
                         <tr style={{ borderTop: '1.5px solid #000000', borderBottom: '1.5px solid #000000', fontWeight: '800' }}>
@@ -533,14 +498,14 @@ export default function PayslipView({ stores, currentStoreId }) {
                           </tr>
                           <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                             <td style={{ padding: '5px 8px', fontWeight: '700', color: '#000000', background: '#ffffff' }}>대체근로수당</td>
-                            <td style={{ padding: '5px 8px', color: '#000000', background: '#ffffff' }}>{breakdown.substituteExplanation || (isKimSoonJa ? '4.5시간 x 통상시급 x 0.5' : (isKimHyeSook || isJungYongJu ? '9시간 x 통상시급 x 0.5' : '9시간 x 통상시급 x 0.5'))}</td>
+                            <td style={{ padding: '5px 8px', color: '#000000', background: '#ffffff' }}>{breakdown.substituteExplanation || '9시간 x 11,229원 x 0.5'}</td>
                           </tr>
-                          {pubHolidayPay > 0 && (
-                            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                              <td style={{ padding: '5px 8px', fontWeight: '700', color: '#000000', background: '#ffffff' }}>공휴일근로수당</td>
-                              <td style={{ padding: '5px 8px', color: '#000000', background: '#ffffff' }}>{breakdown.pubHolidayExplanation || `공휴일근로수당: ${pubHolidayPay.toLocaleString()}원`}</td>
-                            </tr>
-                          )}
+                          <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <td style={{ padding: '5px 8px', fontWeight: '700', color: '#000000', background: '#ffffff' }}>공휴일근로수당</td>
+                            <td style={{ padding: '5px 8px', color: '#000000', background: '#ffffff' }}>
+                              {pubHolidayPay > 0 ? (breakdown.pubHolidayExplanation || `공휴일근로수당: ${pubHolidayPay.toLocaleString()}원`) : ''}
+                            </td>
+                          </tr>
                           <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                             <td style={{ padding: '5px 8px', fontWeight: '700', color: '#000000', background: '#ffffff' }}>근태공제</td>
                             <td style={{ padding: '5px 8px', color: '#000000', background: '#ffffff' }}>{selectedItem.attendance_deduction > 0 ? `근태공제: -${selectedItem.attendance_deduction.toLocaleString()}원` : '근태공제: 공제 없음'}</td>
