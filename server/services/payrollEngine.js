@@ -841,17 +841,12 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
     localIncomeTax = 0;
   }
 
-  // 7. Unreported Difference Deduction (미신고공제: 미신고차액 × 공제율 10%)
+  // 7. Unreported Difference Deduction (이중신고 미신고공제: 미신고차액 × 공제율 10%)
   if (employee.is_dual_reporting === 1) {
-    let calcReportedBase = reportedBase;
-    if (ordinaryHourlyWage === 10320 && reportedBase <= 2200000) {
-      calcReportedBase = 2156880;
-    } else if (reportedBase >= 2000000 && reportedBase <= 2200000) {
-      calcReportedBase = 2156930;
-    }
+    let calcReportedBase = (employee.reported_salary > 0) ? employee.reported_salary : 2156880;
     const unreportedDiff = Math.max(0, totalGrossPay - calcReportedBase);
-    const withholdingRate = (employee.withholding_rate || 10.0) / 100.0;
-    unreportedDiffDeduction = (ordinaryHourlyWage === 10320 && reportedBase <= 2200000) ? 114950 : Math.round(unreportedDiff * withholdingRate);
+    const withholdingRate = (employee.withholding_rate > 0 ? employee.withholding_rate : 10.0) / 100.0;
+    unreportedDiffDeduction = Math.floor((unreportedDiff * withholdingRate) / 10) * 10;
   }
 
   if (isForeignFixed) {
