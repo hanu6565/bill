@@ -93,6 +93,7 @@ export const VISA_GUIDES = {
 export default function EmployeeManagement({ stores, currentStoreId, setCurrentStoreId }) {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
@@ -302,39 +303,83 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
   const isProbationPermissible = formData.contract_duration_type === 'ONE_YEAR_OR_MORE' && formData.is_simple_labor === 0;
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (formData.wage_type === 'HOURLY' && formData.hourly_wage < 10320) {
-      alert('2026년 최저시급(10,320원) 미만으로는 직원을 등록할 수 없습니다.');
+    if (e && e.preventDefault) e.preventDefault();
+    if (submitting) return;
+
+    if (!formData.name || !formData.name.trim()) {
+      alert('직원 성명을 입력해주세요.');
+      setModalTab('basic');
       return;
     }
 
+    if (!formData.hire_date) {
+      alert('입사일자를 입력해주세요.');
+      setModalTab('basic');
+      return;
+    }
+
+    if (formData.wage_type === 'HOURLY' && formData.hourly_wage < 10320) {
+      alert('2026년 최저시급(10,320원) 미만으로는 직원을 등록할 수 없습니다.');
+      setModalTab('basic');
+      return;
+    }
+
+    setSubmitting(true);
     try {
+      const payload = {
+        ...formData,
+        store_id: Number(formData.store_id) || (stores[0] ? stores[0].id : 1),
+        contract_salary: Number(formData.contract_salary) || 0,
+        hourly_wage: Number(formData.hourly_wage) || 10320,
+        reported_salary: Number(formData.reported_salary) || 0,
+        withholding_rate: parseFloat(formData.withholding_rate) || 10.0,
+        fixed_national_pension: Number(formData.fixed_national_pension) || 0
+      };
+
       if (editingEmployee) {
-        await api.updateEmployee(editingEmployee.id, formData);
+        await api.updateEmployee(editingEmployee.id, payload);
       } else {
-        await api.createEmployee(formData);
+        await api.createEmployee(payload);
       }
       setIsModalOpen(false);
-      loadEmployees();
+      await loadEmployees();
     } catch (err) {
       alert(err.message || '직원 정보 저장 실패');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleDelete = async (id, name) => {
+    if (submitting) return;
     if (!window.confirm(`정말로 직원 [${name}]의 정보를 삭제하시겠습니까?\n과거 근태 및 급여 이력에 영향을 줄 수 있습니다.`)) {
       return;
     }
+    setSubmitting(true);
     try {
       await api.deleteEmployee(id);
-      loadEmployees();
+      await loadEmployees();
     } catch (err) {
       alert(err.message || '직원 삭제 실패');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }}>
+      {/* Fullscreen Buffering / Loading Overlay while Submitting */}
+      {submitting && (
+        <div className="loading-overlay">
+          <div className="spinner" />
+          <div style={{ color: '#fff', fontSize: '18px', fontWeight: '800', textAlign: 'center' }}>
+            {editingEmployee ? '직원 정보를 수정하고 급여 기준을 동기화 중입니다...' : '새 직원을 등록하고 4대보험 및 급여 기준을 생성 중입니다...'}
+          </div>
+          <div style={{ color: '#93c5fd', fontSize: '13px', background: 'rgba(255,255,255,0.08)', padding: '8px 18px', borderRadius: '20px', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+            🛡️ 데이터 무결성 보장을 위해 등록 완료 시까지 모든 화면 조작이 안전하게 차단됩니다.
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
@@ -486,11 +531,11 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
         title={editingEmployee ? `직원 정보 수정: ${editingEmployee.name}` : '신규 직원 등록'}
         footer={
           <>
-            <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
+            <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)} disabled={submitting}>
               취소
             </button>
-            <button type="button" className="btn btn-primary" onClick={handleSubmit}>
-              {editingEmployee ? '수정사항 저장' : '직원 등록 완료'}
+            <button type="button" className="btn btn-primary" onClick={handleSubmit} disabled={submitting}>
+              {submitting ? '저장 처리 중...' : (editingEmployee ? '수정사항 저장' : '직원 등록 완료')}
             </button>
           </>
         }

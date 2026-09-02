@@ -78,8 +78,20 @@ router.post('/', async (req, res) => {
       ordinary_wage_items
     } = req.body;
 
-    if (!store_id || !name || !hire_date) {
-      return res.status(400).json({ success: false, message: '매장, 성명, 입사일은 필수 항목입니다.' });
+    let targetStoreId = Number(store_id) || 1;
+    const storeExists = await db.get('SELECT id FROM stores WHERE id = ?', [targetStoreId]);
+    if (!storeExists) {
+      const anyStore = await db.get('SELECT id FROM stores LIMIT 1');
+      if (anyStore) {
+        targetStoreId = anyStore.id;
+      } else {
+        await db.run("INSERT OR IGNORE INTO stores (id, name, biz_number) VALUES (1, '기본매장', '000-00-00000')");
+        targetStoreId = 1;
+      }
+    }
+
+    if (!name || !hire_date) {
+      return res.status(400).json({ success: false, message: '직원 성명과 입사일은 필수 항목입니다.' });
     }
 
     // Minimum wage check for hourly
@@ -121,7 +133,7 @@ router.post('/', async (req, res) => {
         ?
       )`,
       [
-        store_id, name, rrnEncrypted, rrnMasked, hire_date, resign_date || null, position || '직원', dependents_count || 1,
+        targetStoreId, name.trim(), rrnEncrypted, rrnMasked, hire_date, resign_date || null, position || '직원', dependents_count || 1,
         is_foreigner ? 1 : 0, visa_type || null, employment_type || 'REGULAR', wage_type || 'MONTHLY', contract_salary || 0, hourly_wage || minWage,
         fixed_work_hours || '10:00~22:00', bank_name || '', account_number || '', has_car ? 1 : 0, notes || '',
         is_dual_reporting ? 1 : 0, reported_salary || 0, withholding_rate || 10.0, payslip_display_mode || 'SPLIT_PAY',
@@ -234,7 +246,12 @@ router.put('/:id', async (req, res) => {
       rrnMasked = maskRRN(rrn);
     }
 
-    const targetStoreId = store_id !== undefined ? store_id : existing.store_id;
+    let targetStoreId = store_id !== undefined ? (Number(store_id) || existing.store_id || 1) : (existing.store_id || 1);
+    const storeExists = await db.get('SELECT id FROM stores WHERE id = ?', [targetStoreId]);
+    if (!storeExists) {
+      const anyStore = await db.get('SELECT id FROM stores LIMIT 1');
+      targetStoreId = anyStore ? anyStore.id : 1;
+    }
     const targetName = name || existing.name;
     const targetHireDate = hire_date || existing.hire_date;
     const targetResignDate = resign_date !== undefined ? resign_date : existing.resign_date;
