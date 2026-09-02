@@ -98,6 +98,19 @@ export default function Settings() {
     }
   };
 
+  const handleResetRatesToStatutory = () => {
+    if (!window.confirm('대한민국 보건복지부/고용노동부 공식 법정 기준 요율(국민연금 4.5%, 건보 3.545%, 장기요양 12.95%, 고용 0.9%, 최저시급 10,320원)로 초기화하시겠습니까?')) return;
+    setRatesForm({
+      minimumWage: 10320,
+      nationalPension: 0.045,
+      healthInsurance: 0.03545,
+      longtermCareRateOfHealth: 0.1295,
+      employmentInsurance: 0.009,
+      carAllowanceNonTaxableLimit: 200000,
+      overtimeNonTaxableSalaryLimit: 2100000
+    });
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* Header */}
@@ -137,103 +150,191 @@ export default function Settings() {
 
       {/* TAB 1: Rates Form */}
       {activeTab === 'rates' && (
-        <div className="card">
-          <div className="card-header">
-            <h3 style={{ fontSize: '16px', color: '#fff' }}>2026년도 급여 계산 기준 요율</h3>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-              * 값이 변경되어도 이미 계산된 과거 월의 급여 내역은 당시 저장된 요율로 영구 고정됩니다.
-            </span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Statutory Reference Guide Card */}
+          <div style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '16px', borderRadius: 'var(--radius-md)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#60a5fa', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                🏛️ 대한민국 4대 사회보험 법정 공제 요율 안내 (2025~2026년 현행 고시 기준)
+              </h3>
+              <span className="badge badge-primary" style={{ fontSize: '11px' }}>공식 법령 고시 기준</span>
+            </div>
+
+            <div className="table-container" style={{ margin: 0 }}>
+              <table style={{ fontSize: '12.5px' }}>
+                <thead>
+                  <tr style={{ background: 'rgba(0,0,0,0.3)' }}>
+                    <th style={{ padding: '8px 10px' }}>보험 구분</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'center' }}>근로자 부담 요율</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'center' }}>사업주 부담 요율</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'center' }}>총 합계 요율</th>
+                    <th style={{ padding: '8px 10px' }}>법정 부과 기준 및 면제 연령</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={{ fontWeight: '700', color: '#fff' }}>국민연금</td>
+                    <td style={{ textAlign: 'center', fontWeight: '800', color: '#60a5fa' }}>4.5%</td>
+                    <td style={{ textAlign: 'center', color: '#cbd5e1' }}>4.5%</td>
+                    <td style={{ textAlign: 'center', fontWeight: '700' }}>9.0%</td>
+                    <td style={{ color: 'var(--text-muted)', fontSize: '11.5px' }}>
+                      기준소득월액 상한(6,170,000원) / 하한(390,000원) 적용<br />
+                      <strong style={{ color: '#fbbf24' }}>만 18세 이상 ~ 만 60세 미만 의무 가입 (만 60세 도달 시 자동 면제)</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: '700', color: '#fff' }}>건강보험</td>
+                    <td style={{ textAlign: 'center', fontWeight: '800', color: '#34d399' }}>3.545%</td>
+                    <td style={{ textAlign: 'center', color: '#cbd5e1' }}>3.545%</td>
+                    <td style={{ textAlign: 'center', fontWeight: '700' }}>7.09%</td>
+                    <td style={{ color: 'var(--text-muted)', fontSize: '11.5px' }}>보수월액(과세급여) 기준 / 연령 제한 없음</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: '700', color: '#fff' }}>노인장기요양보험</td>
+                    <td style={{ textAlign: 'center', fontWeight: '800', color: '#a78bfa' }}>건보료의 12.95%</td>
+                    <td style={{ textAlign: 'center', color: '#cbd5e1' }}>건보료의 12.95%</td>
+                    <td style={{ textAlign: 'center', fontWeight: '700' }}>0.9182% (보수대비)</td>
+                    <td style={{ color: 'var(--text-muted)', fontSize: '11.5px' }}>건강보험료에 연동 부과 (실효 요율: 보수월액의 0.4591%씩 분담)</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: '700', color: '#fff' }}>고용보험 (실업급여)</td>
+                    <td style={{ textAlign: 'center', fontWeight: '800', color: '#f59e0b' }}>0.9%</td>
+                    <td style={{ textAlign: 'center', color: '#cbd5e1' }}>0.9% + 알파</td>
+                    <td style={{ textAlign: 'center', fontWeight: '700' }}>1.8% + 알파</td>
+                    <td style={{ color: 'var(--text-muted)', fontSize: '11.5px' }}>
+                      사업주는 고용안정·직능개발요율(0.25%~0.85%) 추가 부담<br />
+                      <strong style={{ color: '#fbbf24' }}>만 65세 이후 신규 고용 시 실업급여 적용 제외</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: '700', color: '#fff' }}>산재보험</td>
+                    <td style={{ textAlign: 'center', fontWeight: '800', color: '#94a3b8' }}>0원 (면제)</td>
+                    <td style={{ textAlign: 'center', color: '#38bdf8' }}>100% (약 0.9%)</td>
+                    <td style={{ textAlign: 'center', fontWeight: '700' }}>업종별 상이</td>
+                    <td style={{ color: 'var(--text-muted)', fontSize: '11.5px' }}>근로자 급여 미공제 (사업주가 전액 100% 부담)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          <form onSubmit={handleSaveRates} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">국민연금 근로자 요율 (%)</label>
-                <input 
-                  type="number" 
-                  step="0.001" 
-                  className="form-input" 
-                  value={ratesForm.nationalPension * 100} 
-                  onChange={(e) => setRatesForm({ ...ratesForm, nationalPension: parseFloat(e.target.value) / 100 })} 
-                />
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>법정 기준: 4.5%</span>
+          {/* Rates Edit Card */}
+          <div className="card">
+            <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+              <div>
+                <h3 style={{ fontSize: '16px', color: '#fff', margin: 0 }}>2026년도 급여 계산 기준 요율 설정</h3>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px', display: 'block' }}>
+                  * 수정 후 저장하시면 이후 계산되는 모든 급여 및 모의정산에 즉시 반영됩니다.
+                </span>
               </div>
-
-              <div className="form-group">
-                <label className="form-label">건강보험 근로자 요율 (%)</label>
-                <input 
-                  type="number" 
-                  step="0.001" 
-                  className="form-input" 
-                  value={ratesForm.healthInsurance * 100} 
-                  onChange={(e) => setRatesForm({ ...ratesForm, healthInsurance: parseFloat(e.target.value) / 100 })} 
-                />
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>법정 기준: 3.545%</span>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">장기요양보험 요율 (% - 건강보험료 대비)</label>
-                <input 
-                  type="number" 
-                  step="0.01" 
-                  className="form-input" 
-                  value={ratesForm.longtermCareRateOfHealth * 100} 
-                  onChange={(e) => setRatesForm({ ...ratesForm, longtermCareRateOfHealth: parseFloat(e.target.value) / 100 })} 
-                />
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>법정 기준: 12.95%</span>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">고용보험 근로자 요율 (%)</label>
-                <input 
-                  type="number" 
-                  step="0.001" 
-                  className="form-input" 
-                  value={ratesForm.employmentInsurance * 100} 
-                  onChange={(e) => setRatesForm({ ...ratesForm, employmentInsurance: parseFloat(e.target.value) / 100 })} 
-                />
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>법정 기준: 0.9%</span>
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">2026년 법정 최저시급 (원)</label>
-                <input 
-                  type="number" 
-                  className="form-input" 
-                  value={ratesForm.minimumWage} 
-                  onChange={(e) => setRatesForm({ ...ratesForm, minimumWage: parseInt(e.target.value) || 10320 })} 
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">자가운전보조금 비과세 월 한도 (원)</label>
-                <input 
-                  type="number" 
-                  className="form-input" 
-                  value={ratesForm.carAllowanceNonTaxableLimit} 
-                  onChange={(e) => setRatesForm({ ...ratesForm, carAllowanceNonTaxableLimit: parseInt(e.target.value) || 200000 })} 
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">조리/생산 연장비과세 대상 월정액 기준 (원)</label>
-                <input 
-                  type="number" 
-                  className="form-input" 
-                  value={ratesForm.overtimeNonTaxableSalaryLimit} 
-                  onChange={(e) => setRatesForm({ ...ratesForm, overtimeNonTaxableSalaryLimit: parseInt(e.target.value) || 2100000 })} 
-                />
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
-              <button type="submit" className="btn btn-primary">
-                <Save size={15} /> 요율 설정 저장하기
+              <button 
+                type="button" 
+                className="btn btn-sm btn-secondary" 
+                onClick={handleResetRatesToStatutory}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <RefreshCw size={13} /> 법정 기준값으로 초기화
               </button>
             </div>
-          </form>
+
+            <form onSubmit={handleSaveRates} style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px 0 0 0' }}>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">국민연금 근로자 요율 (%) *</label>
+                  <input 
+                    type="number" 
+                    step="0.001" 
+                    className="form-input" 
+                    value={Math.round(ratesForm.nationalPension * 100000) / 1000} 
+                    onChange={(e) => setRatesForm({ ...ratesForm, nationalPension: parseFloat(e.target.value) / 100 })} 
+                    required
+                  />
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>법정 기준: 4.5%</span>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">건강보험 근로자 요율 (%) *</label>
+                  <input 
+                    type="number" 
+                    step="0.001" 
+                    className="form-input" 
+                    value={Math.round(ratesForm.healthInsurance * 100000) / 1000} 
+                    onChange={(e) => setRatesForm({ ...ratesForm, healthInsurance: parseFloat(e.target.value) / 100 })} 
+                    required
+                  />
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>법정 기준: 3.545%</span>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">장기요양보험 요율 (% - 건강보험료 대비) *</label>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    className="form-input" 
+                    value={Math.round(ratesForm.longtermCareRateOfHealth * 10000) / 100} 
+                    onChange={(e) => setRatesForm({ ...ratesForm, longtermCareRateOfHealth: parseFloat(e.target.value) / 100 })} 
+                    required
+                  />
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>법정 기준: 12.95%</span>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">고용보험 근로자 요율 (%) *</label>
+                  <input 
+                    type="number" 
+                    step="0.001" 
+                    className="form-input" 
+                    value={Math.round(ratesForm.employmentInsurance * 100000) / 1000} 
+                    onChange={(e) => setRatesForm({ ...ratesForm, employmentInsurance: parseFloat(e.target.value) / 100 })} 
+                    required
+                  />
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>법정 기준: 0.9%</span>
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">2026년 법정 최저시급 (원) *</label>
+                  <input 
+                    type="number" 
+                    className="form-input" 
+                    value={ratesForm.minimumWage} 
+                    onChange={(e) => setRatesForm({ ...ratesForm, minimumWage: parseInt(e.target.value, 10) || 10320 })} 
+                    required
+                  />
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>209시간 기본급: {(ratesForm.minimumWage * 209).toLocaleString()}원</span>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">자가운전보조금 비과세 월 한도 (원)</label>
+                  <input 
+                    type="number" 
+                    className="form-input" 
+                    value={ratesForm.carAllowanceNonTaxableLimit} 
+                    onChange={(e) => setRatesForm({ ...ratesForm, carAllowanceNonTaxableLimit: parseInt(e.target.value, 10) || 200000 })} 
+                  />
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>법정 한도: 월 200,000원</span>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">조리/생산 연장비과세 대상 월정액 기준 (원)</label>
+                  <input 
+                    type="number" 
+                    className="form-input" 
+                    value={ratesForm.overtimeNonTaxableSalaryLimit} 
+                    onChange={(e) => setRatesForm({ ...ratesForm, overtimeNonTaxableSalaryLimit: parseInt(e.target.value, 10) || 2100000 })} 
+                  />
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>법정 기준: 월 2,100,000원 이하</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+                <button type="submit" className="btn btn-primary">
+                  <Save size={15} /> 요율 설정 저장하기
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
