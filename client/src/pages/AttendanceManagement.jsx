@@ -26,6 +26,7 @@ export default function AttendanceManagement({ stores, currentStoreId, setCurren
     is_absent: 0,
     is_unpaid_leave: 0,
     is_annual_leave: 0,
+    is_half_annual_leave: 0,
     memo: ''
   });
 
@@ -114,14 +115,14 @@ export default function AttendanceManagement({ stores, currentStoreId, setCurren
   const firstDayOfWeek = new Date(year, month - 1, 1).getDay(); // 0 = Sun
 
   const holidayMap = {};
-  holidays.forEach(h => {
+  for (const h of holidays) {
     holidayMap[h.holiday_date] = h;
-  });
+  }
 
   const attendanceMap = {};
-  attendanceList.forEach(a => {
+  for (const a of attendanceList) {
     attendanceMap[a.work_date] = a;
-  });
+  }
 
   // Summary Metrics
   let totalNetHours = 0;
@@ -132,12 +133,23 @@ export default function AttendanceManagement({ stores, currentStoreId, setCurren
   let workingDaysCount = 0;
   let weekdayOffCount = 0;
   let weekendWorkCount = 0;
+  let annualLeaveDaysCount = 0;
+  let halfLeaveCount = 0;
 
   for (let d = 1; d <= totalDays; d++) {
     const dStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const att = attendanceMap[dStr];
     const dayOfWeek = new Date(dStr).getDay();
     const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+
+    if (att) {
+      if (att.is_half_annual_leave) {
+        halfLeaveCount++;
+        annualLeaveDaysCount += 0.5;
+      } else if (att.is_annual_leave) {
+        annualLeaveDaysCount += 1.0;
+      }
+    }
 
     if (att && att.net_work_hours > 0) {
       workingDaysCount++;
@@ -177,10 +189,11 @@ export default function AttendanceManagement({ stores, currentStoreId, setCurren
         work_date: dateStr,
         clock_in: existing.clock_in || '10:00',
         clock_out: existing.clock_out || '22:00',
-        break_minutes: existing.break_minutes || 60,
+        break_minutes: existing.break_minutes !== undefined ? existing.break_minutes : 60,
         is_absent: existing.is_absent || 0,
         is_unpaid_leave: existing.is_unpaid_leave || 0,
         is_annual_leave: existing.is_annual_leave || 0,
+        is_half_annual_leave: existing.is_half_annual_leave || 0,
         memo: existing.memo || ''
       });
     } else {
@@ -194,6 +207,7 @@ export default function AttendanceManagement({ stores, currentStoreId, setCurren
         is_absent: 0,
         is_unpaid_leave: 0,
         is_annual_leave: 0,
+        is_half_annual_leave: 0,
         memo: ''
       });
     }
@@ -410,6 +424,13 @@ export default function AttendanceManagement({ stores, currentStoreId, setCurren
             </div>
 
             <div style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>연차/반차 사용</div>
+              <div style={{ fontSize: '18px', fontWeight: '700', color: '#34d399', marginTop: '2px' }} className="num-font">
+                {annualLeaveDaysCount}일 <span style={{ fontSize: '11px', color: '#a7f3d0' }}>{halfLeaveCount > 0 ? `(반차 ${halfLeaveCount}회)` : ''}</span>
+              </div>
+            </div>
+
+            <div style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
               <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>연장근로 (1.5x)</div>
               <div style={{ fontSize: '18px', fontWeight: '700', color: '#f59e0b', marginTop: '2px' }} className="num-font">
                 {Math.round(totalOvertimeHours * 10) / 10}h
@@ -476,6 +497,7 @@ export default function AttendanceManagement({ stores, currentStoreId, setCurren
             const hasWork = att && att.net_work_hours > 0;
             const isAbsent = att && att.is_absent;
             const isAnnual = att && att.is_annual_leave;
+            const isHalfLeave = att && att.is_half_annual_leave;
             const isUnpaid = att && att.is_unpaid_leave;
 
             return (
@@ -498,10 +520,15 @@ export default function AttendanceManagement({ stores, currentStoreId, setCurren
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '4px' }}>
                   {hasWork ? (
                     <>
-                      <div style={{ fontSize: '12px', fontWeight: '700', color: '#60a5fa' }}>
+                      <div style={{ fontSize: '12px', fontWeight: '700', color: isHalfLeave ? '#38bdf8' : '#60a5fa' }}>
                         {att.clock_in}~{att.clock_out}
                       </div>
                       <div style={{ fontSize: '11px', display: 'flex', gap: '3px', flexWrap: 'wrap' }}>
+                        {isHalfLeave && (
+                          <span className="badge" style={{ fontSize: '9px', padding: '1px 4px', background: 'rgba(14, 165, 233, 0.25)', border: '1px solid #0ea5e9', color: '#38bdf8', fontWeight: '700' }}>
+                            반차(0.5d)
+                          </span>
+                        )}
                         <span className="badge badge-primary" style={{ fontSize: '9px', padding: '1px 4px' }}>
                           {att.net_work_hours}h
                         </span>
@@ -515,7 +542,7 @@ export default function AttendanceManagement({ stores, currentStoreId, setCurren
                             야간 {att.night_hours}h
                           </span>
                         )}
-                        {att.day_type === 'PUBLIC_HOLIDAY' && (
+                        {(att.day_type === 'PUBLIC_HOLIDAY' || att.day_type === 'PUBLIC_HOLIDAY_HALF_LEAVE') && (
                           <span className="badge badge-danger" style={{ fontSize: '9px', padding: '1px 4px' }}>
                             공휴(0.5x)
                           </span>
@@ -558,7 +585,7 @@ export default function AttendanceManagement({ stores, currentStoreId, setCurren
               <input 
                 type="checkbox" 
                 checked={selectedDayRecord.is_absent === 1}
-                onChange={(e) => setSelectedDayRecord({ ...selectedDayRecord, is_absent: e.target.checked ? 1 : 0, is_unpaid_leave: 0, is_annual_leave: 0 })}
+                onChange={(e) => setSelectedDayRecord({ ...selectedDayRecord, is_absent: e.target.checked ? 1 : 0, is_unpaid_leave: 0, is_annual_leave: 0, is_half_annual_leave: 0 })}
               />
               <span style={{ color: '#f87171', fontWeight: '700' }}>무단결근 (근태공제 대상)</span>
             </label>
@@ -567,7 +594,7 @@ export default function AttendanceManagement({ stores, currentStoreId, setCurren
               <input 
                 type="checkbox" 
                 checked={selectedDayRecord.is_unpaid_leave === 1}
-                onChange={(e) => setSelectedDayRecord({ ...selectedDayRecord, is_unpaid_leave: e.target.checked ? 1 : 0, is_absent: 0, is_annual_leave: 0 })}
+                onChange={(e) => setSelectedDayRecord({ ...selectedDayRecord, is_unpaid_leave: e.target.checked ? 1 : 0, is_absent: 0, is_annual_leave: 0, is_half_annual_leave: 0 })}
               />
               <span style={{ color: '#fbbf24', fontWeight: '700' }}>무급휴가 (근태공제 대상)</span>
             </label>
@@ -575,12 +602,72 @@ export default function AttendanceManagement({ stores, currentStoreId, setCurren
             <label className="form-check">
               <input 
                 type="checkbox" 
-                checked={selectedDayRecord.is_annual_leave === 1}
-                onChange={(e) => setSelectedDayRecord({ ...selectedDayRecord, is_annual_leave: e.target.checked ? 1 : 0, is_absent: 0, is_unpaid_leave: 0 })}
+                checked={selectedDayRecord.is_annual_leave === 1 && !selectedDayRecord.is_half_annual_leave}
+                onChange={(e) => setSelectedDayRecord({ ...selectedDayRecord, is_annual_leave: e.target.checked ? 1 : 0, is_half_annual_leave: 0, is_absent: 0, is_unpaid_leave: 0 })}
               />
-              <span style={{ color: '#34d399', fontWeight: '700' }}>연차휴가 (유급 / 연차수당)</span>
+              <span style={{ color: '#34d399', fontWeight: '700' }}>전일연차 (1.0일 유급 휴무)</span>
+            </label>
+
+            <label className="form-check">
+              <input 
+                type="checkbox" 
+                checked={selectedDayRecord.is_half_annual_leave === 1}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setSelectedDayRecord({ 
+                    ...selectedDayRecord, 
+                    is_half_annual_leave: checked ? 1 : 0, 
+                    is_annual_leave: 0, 
+                    is_absent: 0, 
+                    is_unpaid_leave: 0,
+                    clock_in: checked && (!selectedDayRecord.clock_in || selectedDayRecord.clock_in === '10:00') ? '10:00' : (selectedDayRecord.clock_in || '10:00'),
+                    clock_out: checked && (!selectedDayRecord.clock_out || selectedDayRecord.clock_out === '22:00') ? '16:00' : (selectedDayRecord.clock_out || '16:00'),
+                    break_minutes: selectedDayRecord.break_minutes !== undefined ? selectedDayRecord.break_minutes : 60
+                  });
+                }}
+              />
+              <span style={{ color: '#38bdf8', fontWeight: '700' }}>반차 (0.5일 연차 + 단축근무)</span>
             </label>
           </div>
+
+          {/* Quick preset buttons when 반차 is active */}
+          {selectedDayRecord.is_half_annual_leave === 1 && (
+            <div style={{ background: 'rgba(14, 165, 233, 0.08)', border: '1px solid rgba(14, 165, 233, 0.3)', padding: '12px 14px', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ fontSize: '12.5px', color: '#38bdf8', fontWeight: '700' }}>
+                💡 반차 근무시간 빠른 선택 (0.5일 연차 인정 + 실근무시간 산출):
+              </div>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                <button 
+                  type="button" 
+                  className="btn btn-sm btn-secondary"
+                  onClick={() => setSelectedDayRecord({ ...selectedDayRecord, clock_in: '10:00', clock_out: '16:00', break_minutes: 60 })}
+                >
+                  ⚡ 5시간 근무 (10:00~16:00, 휴게 60분)
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-sm btn-secondary"
+                  onClick={() => setSelectedDayRecord({ ...selectedDayRecord, clock_in: '10:00', clock_out: '17:00', break_minutes: 60 })}
+                >
+                  ⚡ 6시간 근무 (10:00~17:00, 휴게 60분)
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-sm btn-secondary"
+                  onClick={() => setSelectedDayRecord({ ...selectedDayRecord, clock_in: '10:00', clock_out: '15:00', break_minutes: 60 })}
+                >
+                  ⚡ 4시간 근무 (10:00~15:00, 휴게 60분)
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-sm btn-secondary"
+                  onClick={() => setSelectedDayRecord({ ...selectedDayRecord, clock_in: '10:00', clock_out: '15:30', break_minutes: 30 })}
+                >
+                  ⚡ 5시간 근무 (10:00~15:30, 휴게 30분)
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Holiday Designation Card */}
           <div style={{ 
@@ -614,7 +701,7 @@ export default function AttendanceManagement({ stores, currentStoreId, setCurren
                   type="text" 
                   className="form-input" 
                   value={customHolidayName} 
-                  onChange={(e) => setCustomHolidayName(e.target.value)}
+                  onChange={(e) => setCustomHolidayName(e.target.value)} 
                   placeholder="공휴일 명칭 (예: 제헌절)"
                   style={{ width: '150px', padding: '6px 10px', fontSize: '12px' }}
                 />
@@ -629,7 +716,7 @@ export default function AttendanceManagement({ stores, currentStoreId, setCurren
             </div>
           </div>
 
-          {!selectedDayRecord.is_absent && !selectedDayRecord.is_unpaid_leave && !selectedDayRecord.is_annual_leave && (
+          {!selectedDayRecord.is_absent && !selectedDayRecord.is_unpaid_leave && (!selectedDayRecord.is_annual_leave || selectedDayRecord.is_half_annual_leave) && (
             <>
               <div className="form-row">
                 <div className="form-group">
@@ -676,7 +763,7 @@ export default function AttendanceManagement({ stores, currentStoreId, setCurren
               className="form-input" 
               value={selectedDayRecord.memo} 
               onChange={(e) => setSelectedDayRecord({ ...selectedDayRecord, memo: e.target.value })} 
-              placeholder="예: 조기퇴근 1시간, 대타 근무" 
+              placeholder="예: 조기퇴근 1시간, 대타 근무, 반차 등" 
             />
           </div>
         </form>

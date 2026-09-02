@@ -373,9 +373,12 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
       unpaidLeaveDays += 1;
       continue;
     }
-    if (att.is_annual_leave) {
+    if (att.is_annual_leave && !att.is_half_annual_leave) {
       annualLeaveDays += 1;
       continue;
+    }
+    if (att.is_half_annual_leave) {
+      annualLeaveDays += 0.5;
     }
 
     const netHrs = att.net_work_hours || 0;

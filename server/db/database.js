@@ -181,6 +181,7 @@ export async function initDatabase() {
       is_absent INTEGER DEFAULT 0,
       is_unpaid_leave INTEGER DEFAULT 0,
       is_annual_leave INTEGER DEFAULT 0,
+      is_half_annual_leave INTEGER DEFAULT 0,
       is_weekly_holiday INTEGER DEFAULT 0,
       is_public_holiday INTEGER DEFAULT 0,
       memo TEXT,
@@ -355,6 +356,7 @@ export async function initDatabase() {
     if (!aNames.includes('is_public_holiday')) await exec("ALTER TABLE attendance ADD COLUMN is_public_holiday INTEGER DEFAULT 0;");
     if (!aNames.includes('is_weekly_holiday')) await exec("ALTER TABLE attendance ADD COLUMN is_weekly_holiday INTEGER DEFAULT 0;");
     if (!aNames.includes('is_annual_leave')) await exec("ALTER TABLE attendance ADD COLUMN is_annual_leave INTEGER DEFAULT 0;");
+    if (!aNames.includes('is_half_annual_leave')) await exec("ALTER TABLE attendance ADD COLUMN is_half_annual_leave INTEGER DEFAULT 0;");
     if (!aNames.includes('is_unpaid_leave')) await exec("ALTER TABLE attendance ADD COLUMN is_unpaid_leave INTEGER DEFAULT 0;");
     if (!aNames.includes('is_absent')) await exec("ALTER TABLE attendance ADD COLUMN is_absent INTEGER DEFAULT 0;");
 

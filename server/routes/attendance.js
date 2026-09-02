@@ -12,8 +12,8 @@ const upload = multer({ storage: multer.memoryStorage() });
 /**
  * Calculate hours decomposition for one day of attendance
  */
-export async function calculateDayHours(workDate, clockIn, clockOut, breakMinutes = 0, isAbsent = 0, isUnpaidLeave = 0, isAnnualLeave = 0) {
-  if (isAbsent || isUnpaidLeave || isAnnualLeave || !clockIn || !clockOut) {
+export async function calculateDayHours(workDate, clockIn, clockOut, breakMinutes = 0, isAbsent = 0, isUnpaidLeave = 0, isAnnualLeave = 0, isHalfAnnualLeave = 0) {
+  if (isAbsent || isUnpaidLeave || (isAnnualLeave && !isHalfAnnualLeave) || !clockIn || !clockOut) {
     return {
       net_work_hours: 0,
       regular_hours: 0,
@@ -23,7 +23,7 @@ export async function calculateDayHours(workDate, clockIn, clockOut, breakMinute
       holiday_hours_over8: 0,
       public_holiday_hours_under8: 0,
       public_holiday_hours_over8: 0,
-      day_type: isAbsent ? 'ABSENT' : (isUnpaidLeave ? 'UNPAID_LEAVE' : (isAnnualLeave ? 'ANNUAL_PAID_LEAVE' : 'REGULAR'))
+      day_type: isAbsent ? 'ABSENT' : (isUnpaidLeave ? 'UNPAID_LEAVE' : (isAnnualLeave && !isHalfAnnualLeave ? 'ANNUAL_PAID_LEAVE' : (isHalfAnnualLeave ? 'HALF_ANNUAL_LEAVE' : 'REGULAR')))
     };
   }
 
@@ -61,7 +61,7 @@ export async function calculateDayHours(workDate, clockIn, clockOut, breakMinute
   const dayOfWeek = d.getDay(); // 0: Sun, 6: Sat
   const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
 
-  let dayType = 'REGULAR';
+  let dayType = isHalfAnnualLeave ? 'HALF_ANNUAL_LEAVE' : 'REGULAR';
   let regularHours = Math.min(8.0, netHours);
   let overtimeHours = Math.max(0.0, netHours - 8.0);
   let holidayHoursUnder8 = 0;
@@ -71,15 +71,12 @@ export async function calculateDayHours(workDate, clockIn, clockOut, breakMinute
 
   if (isPubHol) {
     // Statutory Public holiday work (법정공휴일 근로: 시급 0.5x 가산수당 대상)
-    dayType = 'PUBLIC_HOLIDAY';
+    dayType = isHalfAnnualLeave ? 'PUBLIC_HOLIDAY_HALF_LEAVE' : 'PUBLIC_HOLIDAY';
     pubHolidayHoursUnder8 = Math.min(8.0, netHours);
     pubHolidayHoursOver8 = Math.max(0.0, netHours - 8.0);
-  } else if (isWeekend) {
+  } else if (isWeekend && !isHalfAnnualLeave) {
     // Weekend is regular schedule in restaurants: 8h regular + >8h overtime (1.5x)
     dayType = 'WEEKEND';
-  } else {
-    // Regular weekday
-    dayType = 'REGULAR';
   }
 
   return {
@@ -126,7 +123,7 @@ router.get('/', async (req, res) => {
 // POST /api/attendance/save-daily
 router.post('/save-daily', async (req, res) => {
   try {
-    const { employee_id, store_id, work_date, clock_in, clock_out, break_minutes, is_absent, is_unpaid_leave, is_annual_leave, memo } = req.body;
+    const { employee_id, store_id, work_date, clock_in, clock_out, break_minutes, is_absent, is_unpaid_leave, is_annual_leave, is_half_annual_leave, memo } = req.body;
     
     if (!employee_id || !store_id || !work_date) {
       return res.status(400).json({ success: false, message: '직원ID, 매장ID, 근무일자는 필수입니다.' });
@@ -139,7 +136,8 @@ router.post('/save-daily', async (req, res) => {
       break_minutes || 0, 
       is_absent ? 1 : 0, 
       is_unpaid_leave ? 1 : 0, 
-      is_annual_leave ? 1 : 0
+      is_annual_leave ? 1 : 0,
+      is_half_annual_leave ? 1 : 0
     );
 
     await db.run(
@@ -147,8 +145,8 @@ router.post('/save-daily', async (req, res) => {
         employee_id, store_id, work_date, clock_in, clock_out, break_minutes,
         net_work_hours, day_type, regular_hours, overtime_hours, night_hours,
         holiday_hours_under8, holiday_hours_over8, public_holiday_hours_under8, public_holiday_hours_over8,
-        is_absent, is_unpaid_leave, is_annual_leave, memo
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        is_absent, is_unpaid_leave, is_annual_leave, is_half_annual_leave, memo
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(employee_id, work_date) DO UPDATE SET
         store_id = excluded.store_id,
         clock_in = excluded.clock_in,
@@ -166,12 +164,13 @@ router.post('/save-daily', async (req, res) => {
         is_absent = excluded.is_absent,
         is_unpaid_leave = excluded.is_unpaid_leave,
         is_annual_leave = excluded.is_annual_leave,
+        is_half_annual_leave = excluded.is_half_annual_leave,
         memo = excluded.memo`,
       [
         employee_id, store_id, work_date, clock_in || null, clock_out || null, break_minutes || 0,
         hours.net_work_hours, hours.day_type, hours.regular_hours, hours.overtime_hours, hours.night_hours,
         hours.holiday_hours_under8, hours.holiday_hours_over8, hours.public_holiday_hours_under8, hours.public_holiday_hours_over8,
-        is_absent ? 1 : 0, is_unpaid_leave ? 1 : 0, is_annual_leave ? 1 : 0, memo || ''
+        is_absent ? 1 : 0, is_unpaid_leave ? 1 : 0, is_annual_leave ? 1 : 0, is_half_annual_leave ? 1 : 0, memo || ''
       ]
     );
 

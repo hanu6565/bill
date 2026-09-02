@@ -130,8 +130,8 @@ test('4. Overtime, Night, Weekend & Public Holiday Allowances (주말 일반/연
   // Weekend Holiday: 0 (주말은 1.5배 별도 가산하지 않음)
   assert.equal(payroll.holidayAllowance, 0);
 
-  // Public Holiday: 10,000 * 0.5 * 10 = 50,000 (시급의 0.5배 가산수당)
-  assert.equal(payroll.publicHolidayAllowance, 50000);
+  // Public Holiday Substitute: 10,000 * 0.5 * 10 = 50,000 (시급의 0.5배 대체근로 가산수당)
+  assert.equal(payroll.substituteAllowance, 50000);
 });
 
 test('5. Dual-Reporting Structure (이중신고구조 정밀 계산 검증)', () => {
@@ -181,4 +181,59 @@ test('5. Dual-Reporting Structure (이중신고구조 정밀 계산 검증)', ()
 
   // Net Pay must equal Biz Account Pay + Personal Account Pay
   assert.equal(payroll.netPay, payroll.bizAccountPay + payroll.personalAccountPay);
+});
+
+test('6. Half-day Annual Leave (반차 0.5일 인정 및 실근무시간 산정 검증)', () => {
+  const emp = {
+    id: 103,
+    store_id: 1,
+    wage_type: 'MONTHLY',
+    contract_salary: 3000000,
+    hire_date: '2025-01-01',
+    dependents_count: 1,
+    is_dual_reporting: 0
+  };
+
+  const attendance = [
+    // Full Annual Leave: 1.0 day
+    {
+      work_date: '2026-09-01',
+      net_work_hours: 0,
+      is_annual_leave: 1,
+      is_half_annual_leave: 0
+    },
+    // Half-day Annual Leave: 0.5 day + 5.0h actual work
+    {
+      work_date: '2026-09-02',
+      clock_in: '10:00',
+      clock_out: '16:00',
+      break_minutes: 60,
+      net_work_hours: 5.0,
+      regular_hours: 5.0,
+      overtime_hours: 0,
+      night_hours: 0,
+      is_annual_leave: 0,
+      is_half_annual_leave: 1
+    },
+    // Half-day Annual Leave: 0.5 day + 6.0h actual work
+    {
+      work_date: '2026-09-03',
+      clock_in: '10:00',
+      clock_out: '17:00',
+      break_minutes: 60,
+      net_work_hours: 6.0,
+      regular_hours: 6.0,
+      overtime_hours: 0,
+      night_hours: 0,
+      is_annual_leave: 0,
+      is_half_annual_leave: 1
+    }
+  ];
+
+  const payroll = calculateEmployeePayroll(emp, attendance, '2026-09', DEFAULT_RATES_2026);
+
+  // 1 full day + 2 half days = 2.0 days total annual leave
+  assert.equal(payroll.calculationBreakdown.summary.annualLeaveDays, 2.0);
+  assert.equal(payroll.calculationBreakdown.summary.workingDaysCount, 2); // 2 half-day work days counted
+  assert.equal(payroll.calculationBreakdown.summary.totalNetHours, 11.0); // 5h + 6h = 11h
 });
