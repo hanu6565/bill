@@ -232,9 +232,12 @@ export default function AttendanceManagement({ stores, currentStoreId, setCurren
   const handleSaveDay = async (e) => {
     e.preventDefault();
     try {
+      const emp = employees.find(emp => emp.id === Number(selectedEmployeeId));
+      const targetStoreId = (emp && emp.store_id) || selectedStoreId || (stores[0] ? stores[0].id : 1);
+
       await api.saveDailyAttendance({
-        employee_id: selectedEmployeeId,
-        store_id: selectedStoreId,
+        employee_id: Number(selectedEmployeeId),
+        store_id: Number(targetStoreId),
         ...selectedDayRecord
       });
       setIsDayModalOpen(false);

@@ -125,8 +125,25 @@ router.post('/save-daily', async (req, res) => {
   try {
     const { employee_id, store_id, work_date, clock_in, clock_out, break_minutes, is_absent, is_unpaid_leave, is_annual_leave, is_half_annual_leave, memo } = req.body;
     
-    if (!employee_id || !store_id || !work_date) {
-      return res.status(400).json({ success: false, message: '직원ID, 매장ID, 근무일자는 필수입니다.' });
+    if (!employee_id || !work_date) {
+      return res.status(400).json({ success: false, message: '직원ID와 근무일자는 필수입니다.' });
+    }
+
+    const emp = await db.get('SELECT id, store_id FROM employees WHERE id = ?', [Number(employee_id)]);
+    if (!emp) {
+      return res.status(404).json({ success: false, message: '해당 직원을 찾을 수 없습니다.' });
+    }
+
+    let targetStoreId = emp.store_id || Number(store_id) || 1;
+    const storeExists = await db.get('SELECT id FROM stores WHERE id = ?', [targetStoreId]);
+    if (!storeExists) {
+      const anyStore = await db.get('SELECT id FROM stores LIMIT 1');
+      if (anyStore) {
+        targetStoreId = anyStore.id;
+      } else {
+        await db.run("INSERT OR IGNORE INTO stores (id, name, biz_number) VALUES (1, '기본매장', '000-00-00000')");
+        targetStoreId = 1;
+      }
     }
 
     const hours = await calculateDayHours(
@@ -167,17 +184,18 @@ router.post('/save-daily', async (req, res) => {
         is_half_annual_leave = excluded.is_half_annual_leave,
         memo = excluded.memo`,
       [
-        employee_id, store_id, work_date, clock_in || null, clock_out || null, break_minutes || 0,
+        emp.id, targetStoreId, work_date, clock_in || null, clock_out || null, break_minutes || 0,
         hours.net_work_hours, hours.day_type, hours.regular_hours, hours.overtime_hours, hours.night_hours,
         hours.holiday_hours_under8, hours.holiday_hours_over8, hours.public_holiday_hours_under8, hours.public_holiday_hours_over8,
         is_absent ? 1 : 0, is_unpaid_leave ? 1 : 0, is_annual_leave ? 1 : 0, is_half_annual_leave ? 1 : 0, memo || ''
       ]
     );
 
-    const saved = await db.get('SELECT * FROM attendance WHERE employee_id = ? AND work_date = ?', [employee_id, work_date]);
+    const saved = await db.get('SELECT * FROM attendance WHERE employee_id = ? AND work_date = ?', [emp.id, work_date]);
     res.json({ success: true, record: saved });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error('save-daily attendance error:', err);
+    res.status(500).json({ success: false, message: '근태 저장 중 오류가 발생했습니다: ' + (err.message || '') });
   }
 });
 
@@ -186,8 +204,25 @@ router.post('/quick-fill', async (req, res) => {
   try {
     const { employee_id, store_id, year_month, default_clock_in, default_clock_out, default_break_minutes, off_dates, custom_shifts } = req.body;
     
-    if (!employee_id || !store_id || !year_month) {
+    if (!employee_id || !year_month) {
       return res.status(400).json({ success: false, message: '필수 파라미터가 누락되었습니다.' });
+    }
+
+    const emp = await db.get('SELECT id, store_id FROM employees WHERE id = ?', [Number(employee_id)]);
+    if (!emp) {
+      return res.status(404).json({ success: false, message: '해당 직원을 찾을 수 없습니다.' });
+    }
+
+    let targetStoreId = emp.store_id || Number(store_id) || 1;
+    const storeExists = await db.get('SELECT id FROM stores WHERE id = ?', [targetStoreId]);
+    if (!storeExists) {
+      const anyStore = await db.get('SELECT id FROM stores LIMIT 1');
+      if (anyStore) {
+        targetStoreId = anyStore.id;
+      } else {
+        await db.run("INSERT OR IGNORE INTO stores (id, name, biz_number) VALUES (1, '기본매장', '000-00-00000')");
+        targetStoreId = 1;
+      }
     }
 
     const [yStr, mStr] = year_month.split('-');
@@ -250,7 +285,7 @@ router.post('/quick-fill', async (req, res) => {
           is_annual_leave = excluded.is_annual_leave,
           memo = excluded.memo`,
         [
-          employee_id, store_id, dateStr, clockIn || null, clockOut || null, breakMinutes,
+          emp.id, targetStoreId, dateStr, clockIn || null, clockOut || null, breakMinutes,
           hours.net_work_hours, hours.day_type, hours.regular_hours, hours.overtime_hours, hours.night_hours,
           hours.holiday_hours_under8, hours.holiday_hours_over8, hours.public_holiday_hours_under8, hours.public_holiday_hours_over8,
           isAbsent, isUnpaidLeave, 0, ''
@@ -260,12 +295,13 @@ router.post('/quick-fill', async (req, res) => {
 
     const updatedRecords = await db.query(
       'SELECT * FROM attendance WHERE employee_id = ? AND work_date LIKE ? ORDER BY work_date ASC',
-      [employee_id, `${year_month}-%`]
+      [emp.id, `${year_month}-%`]
     );
 
     res.json({ success: true, count: updatedRecords.length, records: updatedRecords });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error('quick-fill attendance error:', err);
+    res.status(500).json({ success: false, message: '빠른 입력 처리 중 오류가 발생했습니다: ' + (err.message || '') });
   }
 });
 
