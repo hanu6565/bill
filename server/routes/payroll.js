@@ -4,6 +4,7 @@ import { calculateEmployeePayroll, DEFAULT_RATES_2026 } from '../services/payrol
 import { validatePayrollRun } from '../services/validationService.js';
 import { generateWageLedgerExcel, generatePayslipExcel } from '../services/exportService.js';
 import { authenticateToken } from './auth.js';
+import { pushToSupabase } from '../db/supabaseBridge.js';
 
 const router = express.Router();
 router.use(authenticateToken);
@@ -159,6 +160,10 @@ router.post('/calculate', async (req, res) => {
     const validatedDetails = await validatePayrollRun(runId, store_id, year_month, DEFAULT_RATES_2026);
 
     const updatedRun = await db.get('SELECT * FROM payroll_runs WHERE id = ?', [runId]);
+    const details = await db.query('SELECT * FROM payroll_details WHERE payroll_run_id = ?', [runId]);
+    await pushToSupabase('payroll_runs', updatedRun);
+    await pushToSupabase('payroll_details', details);
+
     res.json({
       success: true,
       run: updatedRun,
@@ -387,6 +392,8 @@ router.post('/check-employee', async (req, res) => {
     }
 
     await db.run('UPDATE payroll_details SET inspected = ? WHERE id = ?', [inspected ? 1 : 0, detail_id]);
+    const updatedDetail = await db.get('SELECT * FROM payroll_details WHERE id = ?', [detail_id]);
+    await pushToSupabase('payroll_details', updatedDetail);
     res.json({ success: true, message: '검수 상태가 업데이트되었습니다.' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -402,6 +409,8 @@ router.post('/check-all', async (req, res) => {
     }
 
     await db.run('UPDATE payroll_details SET inspected = ? WHERE payroll_run_id = ?', [inspected ? 1 : 0, run_id]);
+    const details = await db.query('SELECT * FROM payroll_details WHERE payroll_run_id = ?', [run_id]);
+    await pushToSupabase('payroll_details', details);
     res.json({ success: true, message: '전체 검수 상태가 업데이트되었습니다.' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -442,6 +451,7 @@ router.post('/confirm', async (req, res) => {
     );
 
     const updated = await db.get('SELECT * FROM payroll_runs WHERE id = ?', [run_id]);
+    await pushToSupabase('payroll_runs', updated);
     res.json({ success: true, run: updated, message: '급여가 최종 [확정]되었습니다. 이제 급여명세서와 임금대장을 발급할 수 있습니다.' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

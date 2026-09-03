@@ -3,6 +3,7 @@ import db from '../db/database.js';
 import { encryptText, decryptText, maskRRN } from '../utils/crypto.js';
 import { checkProbationEligibility, calculateEmployeePayroll, DEFAULT_RATES_2026 } from '../services/payrollEngine.js';
 import { authenticateToken } from './auth.js';
+import { pushToSupabase } from '../db/supabaseBridge.js';
 
 const router = express.Router();
 router.use(authenticateToken);
@@ -17,7 +18,7 @@ router.get('/', async (req, res) => {
     let sql = `
       SELECT e.*, s.name as store_name
       FROM employees e
-      JOIN stores s ON e.store_id = s.id
+      LEFT JOIN stores s ON e.store_id = s.id
     `;
     const params = [];
     if (store_id) {
@@ -39,7 +40,7 @@ router.get('/:id', async (req, res) => {
     const employee = await db.get(
       `SELECT e.*, s.name as store_name 
        FROM employees e 
-       JOIN stores s ON e.store_id = s.id 
+       LEFT JOIN stores s ON e.store_id = s.id 
        WHERE e.id = ?`,
       [req.params.id]
     );
@@ -202,6 +203,7 @@ router.post('/', async (req, res) => {
       console.error('Error auto-syncing payroll run on create:', syncErr);
     }
 
+    await pushToSupabase('employees', newEmp);
     res.json({ success: true, employee: newEmp });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -389,6 +391,7 @@ router.put('/:id', async (req, res) => {
       console.error('Error auto-syncing payroll run:', syncErr);
     }
 
+    await pushToSupabase('employees', updated);
     res.json({ success: true, employee: updated });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -399,6 +402,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     await db.run('DELETE FROM employees WHERE id = ?', [req.params.id]);
+    await pushToSupabase('employees', { id: req.params.id }, 'delete');
     res.json({ success: true, message: '직원 정보가 삭제되었습니다.' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

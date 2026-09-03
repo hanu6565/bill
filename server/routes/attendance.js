@@ -4,6 +4,7 @@ import XLSX from 'xlsx';
 import db from '../db/database.js';
 import { isPublicHoliday } from '../services/holidayService.js';
 import { authenticateToken } from './auth.js';
+import { pushToSupabase } from '../db/supabaseBridge.js';
 
 const router = express.Router();
 router.use(authenticateToken);
@@ -192,6 +193,7 @@ router.post('/save-daily', async (req, res) => {
     );
 
     const saved = await db.get('SELECT * FROM attendance WHERE employee_id = ? AND work_date = ?', [emp.id, work_date]);
+    await pushToSupabase('attendance', saved);
     res.json({ success: true, record: saved });
   } catch (err) {
     console.error('save-daily attendance error:', err);
@@ -298,6 +300,7 @@ router.post('/quick-fill', async (req, res) => {
       [emp.id, `${year_month}-%`]
     );
 
+    await pushToSupabase('attendance', updatedRecords);
     res.json({ success: true, count: updatedRecords.length, records: updatedRecords });
   } catch (err) {
     console.error('quick-fill attendance error:', err);

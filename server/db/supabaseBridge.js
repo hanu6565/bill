@@ -54,8 +54,8 @@ export async function pullFromSupabase() {
             has_car, notes, non_taxable_meal, non_taxable_car, non_taxable_overtime,
             tax_exempt_income_tax, tax_exempt_social_ins, ins_national_pension, ins_health,
             ins_longterm_care, ins_employment, ins_work_accident, deduct_income_tax, deduct_local_tax,
-            ordinary_wage_items, payslip_display_mode
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            fixed_national_pension, ordinary_wage_items, payslip_display_mode
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
           e.id, e.store_id, e.name, e.rrn_encrypted, e.rrn_masked, e.phone, e.position, e.hire_date, e.resign_date,
           e.employment_type || 'REGULAR', e.wage_type || 'MONTHLY', e.contract_salary || 0, e.hourly_wage || 0,
@@ -73,6 +73,7 @@ export async function pullFromSupabase() {
           e.ins_work_accident !== undefined ? e.ins_work_accident : 1,
           e.deduct_income_tax !== undefined ? e.deduct_income_tax : 1,
           e.deduct_local_tax !== undefined ? e.deduct_local_tax : 1,
+          e.fixed_national_pension || 0,
           e.ordinary_wage_items || '["basic_pay"]', e.payslip_display_mode || 'STANDARD'
         ]);
       }
@@ -88,15 +89,16 @@ export async function pullFromSupabase() {
             id, employee_id, store_id, work_date, clock_in, clock_out, break_minutes, net_work_hours,
             day_type, regular_hours, overtime_hours, night_hours, holiday_hours, public_holiday_hours,
             holiday_hours_under8, holiday_hours_over8, public_holiday_hours_under8, public_holiday_hours_over8,
-            is_public_holiday, is_weekly_holiday, is_annual_leave, is_unpaid_leave, is_absent
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            is_public_holiday, is_weekly_holiday, is_annual_leave, is_half_annual_leave, is_unpaid_leave, is_absent, memo
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
           a.id, a.employee_id, a.store_id, a.work_date, a.clock_in, a.clock_out, a.break_minutes || 60,
           a.net_work_hours || 0, a.day_type || 'REGULAR', a.regular_hours || 0, a.overtime_hours || 0,
           a.night_hours || 0, a.holiday_hours || 0, a.public_holiday_hours || 0,
           a.holiday_hours_under8 || 0, a.holiday_hours_over8 || 0,
           a.public_holiday_hours_under8 || 0, a.public_holiday_hours_over8 || 0,
-          a.is_public_holiday || 0, a.is_weekly_holiday || 0, a.is_annual_leave || 0, a.is_unpaid_leave || 0, a.is_absent || 0
+          a.is_public_holiday || 0, a.is_weekly_holiday || 0, a.is_annual_leave || 0, a.is_half_annual_leave || 0,
+          a.is_unpaid_leave || 0, a.is_absent || 0, a.memo || ''
         ]);
       }
       console.log(`✅ [Supabase Bridge] Hydrated ${attendance.length} attendance records.`);
@@ -159,10 +161,23 @@ export async function pullFromSupabase() {
  */
 export async function pushToSupabase(table, data, action = 'upsert') {
   try {
+    if (!data) return;
     if (action === 'delete') {
       await supabaseAdmin.from(table).delete().match(data);
     } else {
-      await supabaseAdmin.from(table).upsert(data);
+      const records = Array.isArray(data) ? data : [data];
+      const sanitized = records.map(r => {
+        const copy = { ...r };
+        delete copy.store_name;
+        delete copy.employee_count;
+        return copy;
+      });
+      const { error } = await supabaseAdmin.from(table).upsert(sanitized);
+      if (error) {
+        console.warn(`[Supabase Upsert Error] Table ${table}:`, error.message);
+      } else {
+        console.log(`☁️ [Supabase Sync] Upserted ${sanitized.length} record(s) to ${table}`);
+      }
     }
   } catch (err) {
     console.warn(`[Supabase Push Error] Table ${table}:`, err.message);

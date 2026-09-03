@@ -1,6 +1,7 @@
 import express from 'express';
 import db from '../db/database.js';
 import { authenticateToken } from './auth.js';
+import { pushToSupabase } from '../db/supabaseBridge.js';
 
 const router = express.Router();
 router.use(authenticateToken);
@@ -34,18 +35,20 @@ router.get('/:id', async (req, res) => {
 // POST /api/stores
 router.post('/', async (req, res) => {
   try {
-    const { name, business_number, ceo_name, address, phone, accident_rate, default_wage_type } = req.body;
+    const { name, business_number, biz_number, ceo_name, address, phone, accident_rate, default_wage_type } = req.body;
     if (!name) {
       return res.status(400).json({ success: false, message: '매장명은 필수 입력 항목입니다.' });
     }
 
+    const bNum = business_number || biz_number || '';
     const result = await db.run(
-      `INSERT INTO stores (name, business_number, ceo_name, address, phone, accident_rate, default_wage_type)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [name, business_number || '', ceo_name || '', address || '', phone || '', accident_rate || 0.9, default_wage_type || 'MONTHLY']
+      `INSERT INTO stores (name, business_number, biz_number, ceo_name, address, phone, accident_rate, default_wage_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [name.trim(), bNum, bNum, ceo_name || '', address || '', phone || '', accident_rate || 0.9, default_wage_type || 'MONTHLY']
     );
 
     const newStore = await db.get('SELECT * FROM stores WHERE id = ?', [result.lastID]);
+    await pushToSupabase('stores', newStore);
     res.json({ success: true, store: newStore });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -55,15 +58,17 @@ router.post('/', async (req, res) => {
 // PUT /api/stores/:id
 router.put('/:id', async (req, res) => {
   try {
-    const { name, business_number, ceo_name, address, phone, accident_rate, default_wage_type } = req.body;
+    const { name, business_number, biz_number, ceo_name, address, phone, accident_rate, default_wage_type } = req.body;
+    const bNum = business_number || biz_number || '';
     await db.run(
       `UPDATE stores 
-       SET name = ?, business_number = ?, ceo_name = ?, address = ?, phone = ?, accident_rate = ?, default_wage_type = ?, updated_at = CURRENT_TIMESTAMP
+       SET name = ?, business_number = ?, biz_number = ?, ceo_name = ?, address = ?, phone = ?, accident_rate = ?, default_wage_type = ?, updated_at = CURRENT_TIMESTAMP
        WHERE id = ?`,
-      [name, business_number, ceo_name, address, phone, accident_rate, default_wage_type, req.params.id]
+      [name, bNum, bNum, ceo_name, address, phone, accident_rate, default_wage_type, req.params.id]
     );
 
     const updated = await db.get('SELECT * FROM stores WHERE id = ?', [req.params.id]);
+    await pushToSupabase('stores', updated);
     res.json({ success: true, store: updated });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -74,6 +79,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     await db.run('DELETE FROM stores WHERE id = ?', [req.params.id]);
+    await pushToSupabase('stores', { id: req.params.id }, 'delete');
     res.json({ success: true, message: '매장이 삭제되었습니다.' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
