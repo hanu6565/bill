@@ -90,6 +90,63 @@ export const VISA_GUIDES = {
   }
 };
 
+/**
+ * Foreign worker visa 4-Major Insurance statutory defaults mapping
+ */
+export const getVisaInsuranceDefaults = (visaType, isForeigner) => {
+  if (!isForeigner || Number(isForeigner) === 0) {
+    return {
+      ins_national_pension: 1,
+      ins_health: 1,
+      ins_longterm_care: 1,
+      ins_employment: 1,
+      ins_work_accident: 1,
+      deduct_income_tax: 1,
+      deduct_local_tax: 1
+    };
+  }
+
+  const vKey = (visaType || '').toUpperCase().trim();
+
+  // 1. D-2, D-4 (유학 / 어학연수) : 국민연금 제외(0), 고용보험 제외(0), 건강보험(1), 장기요양(1), 산재(1)
+  if (['D-2', 'D-4', 'D-1', 'D-3', 'C-3', 'C-4'].some(k => vKey.startsWith(k))) {
+    return {
+      ins_national_pension: 0,
+      ins_health: 1,
+      ins_longterm_care: 1,
+      ins_employment: 0,
+      ins_work_accident: 1,
+      deduct_income_tax: 1,
+      deduct_local_tax: 1
+    };
+  }
+
+  // 2. F-2, F-5, F-6 (거주 / 영주 / 결혼이민) : 내국인과 동일하게 4대보험 전원 당연적용(1)
+  if (['F-2', 'F-5', 'F-6'].some(k => vKey.startsWith(k))) {
+    return {
+      ins_national_pension: 1,
+      ins_health: 1,
+      ins_longterm_care: 1,
+      ins_employment: 1,
+      ins_work_accident: 1,
+      deduct_income_tax: 1,
+      deduct_local_tax: 1
+    };
+  }
+
+  // 3. E-9 (비전문취업), H-2 (방문취업), F-4 (재외동포), E-7 (전문인력) :
+  // 고용보험은 법정 '임의가입' (실무 기본값: 0 / 비공제 권장), 건강보험(1), 장기요양(1), 산재보험(1), 국민연금(1)
+  return {
+    ins_national_pension: 1,
+    ins_health: 1,
+    ins_longterm_care: 1,
+    ins_employment: 0,
+    ins_work_accident: 1,
+    deduct_income_tax: 1,
+    deduct_local_tax: 1
+  };
+};
+
 export default function EmployeeManagement({ stores, currentStoreId, setCurrentStoreId }) {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -799,11 +856,14 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
                     className="form-select"
                     value={formData.is_foreigner}
                     onChange={(e) => {
-                      const isFor = parseInt(e.target.value);
+                      const isFor = parseInt(e.target.value, 10);
+                      const targetVisa = isFor === 1 ? (formData.visa_type || 'E-9') : '';
+                      const insDefaults = getVisaInsuranceDefaults(targetVisa, isFor);
                       setFormData({ 
                         ...formData, 
                         is_foreigner: isFor,
-                        visa_type: isFor === 1 && !formData.visa_type ? 'D-2' : (isFor === 0 ? '' : formData.visa_type)
+                        visa_type: targetVisa,
+                        ...insDefaults
                       });
                     }}
                   >
@@ -832,14 +892,20 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
                           value={Object.keys(VISA_GUIDES).includes(matchedKey) && matchedKey !== 'OTHER' ? matchedKey : 'CUSTOM'}
                           onChange={(e) => {
                             if (e.target.value !== 'CUSTOM') {
-                              setFormData({ ...formData, visa_type: e.target.value });
+                              const newVisa = e.target.value;
+                              const insDefaults = getVisaInsuranceDefaults(newVisa, 1);
+                              setFormData({ 
+                                ...formData, 
+                                visa_type: newVisa,
+                                ...insDefaults
+                              });
                             }
                           }}
                         >
+                          <option value="E-9">E-9 (비전문취업 / 고용허가)</option>
+                          <option value="H-2">H-2 (방문취업 / 외국동포)</option>
                           <option value="D-2">D-2 (유학 / 학위과정)</option>
                           <option value="D-4">D-4 (일반연수 / 어학연수)</option>
-                          <option value="H-2">H-2 (방문취업 / 외국동포)</option>
-                          <option value="E-9">E-9 (비전문취업 / 고용허가)</option>
                           <option value="F-4">F-4 (재외동포)</option>
                           <option value="F-5">F-5 (영주권)</option>
                           <option value="F-6">F-6 (결혼이민)</option>
@@ -852,7 +918,15 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
                           className="form-input" 
                           style={{ width: '100px', padding: '6px 10px', fontSize: '12.5px' }}
                           value={formData.visa_type} 
-                          onChange={(e) => setFormData({ ...formData, visa_type: e.target.value })} 
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const insDefaults = getVisaInsuranceDefaults(val, 1);
+                            setFormData({ 
+                              ...formData, 
+                              visa_type: val,
+                              ...insDefaults
+                            });
+                          }} 
                           placeholder="비자 코드" 
                           required={formData.is_foreigner === 1}
                         />
@@ -888,6 +962,24 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
                           {guide.allowedJobs}
                         </div>
                       </div>
+                    </div>
+
+                    {/* Auto-applied preset notification */}
+                    <div style={{ background: 'rgba(59, 130, 246, 0.12)', border: '1px dashed #3b82f6', borderRadius: '6px', padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                      <div style={{ fontSize: '12px', color: '#93c5fd', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>⚡</span>
+                        <span>
+                          <strong>[{matchedKey}]</strong> 비자 법정 기준에 맞춰 <strong>[3. 4대보험 & 세금]</strong> 탭의 고용보험(임의가입 기본 비공제) 및 산재·건강보험 설정이 자동 동기화되었습니다.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-primary"
+                        style={{ fontSize: '11px', padding: '3px 10px', color: '#93c5fd', borderColor: '#3b82f6' }}
+                        onClick={() => setModalTab('insurance')}
+                      >
+                        4대보험 설정 확인 →
+                      </button>
                     </div>
                   </div>
                 );
@@ -1154,24 +1246,93 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
             const isPensionExempt = empAge !== null && empAge >= 60;
             const isEmploymentExempt = empAge !== null && empAge >= 65;
 
+            const visaKey = (formData.visa_type || '').toUpperCase().trim();
+            const matchedVisaKey = Object.keys(VISA_GUIDES).find(k => visaKey.startsWith(k)) || 'OTHER';
+            const visaGuide = VISA_GUIDES[matchedVisaKey] || VISA_GUIDES['OTHER'];
+            const isForeignWorker = formData.is_foreigner === 1;
+            const isForeignOptionalEmployment = isForeignWorker && ['E-9', 'H-2', 'D-2', 'D-4', 'F-4', 'E-7'].some(k => visaKey.startsWith(k));
+            const isForeignPensionExempt = isForeignWorker && ['D-2', 'D-4', 'D-1', 'D-3', 'C-3', 'C-4'].some(k => visaKey.startsWith(k));
+
             return (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* 0. 외국인 비자 법정 4대보험 기준 안내 & 원클릭 동기화 배너 */}
+                {isForeignWorker && (
+                  <div style={{
+                    background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.28) 0%, rgba(15, 23, 42, 0.95) 100%)',
+                    border: '1px solid rgba(59, 130, 246, 0.5)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '14px 16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '20px' }}>🌐</span>
+                        <div>
+                          <div style={{ fontSize: '13.5px', fontWeight: '800', color: '#93c5fd', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            외국인 비자 [{formData.visa_type || '비자'}] 법정 4대보험 기준 적용 현황
+                            <span className="badge badge-warning" style={{ fontSize: '10.5px' }}>{visaGuide.category}</span>
+                          </div>
+                          <div style={{ fontSize: '11.5px', color: '#cbd5e1', marginTop: '2px' }}>
+                            {visaGuide.title}
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-primary"
+                        style={{ fontSize: '11.5px', padding: '5px 12px', display: 'flex', alignItems: 'center', gap: '5px', background: '#2563eb', whiteSpace: 'nowrap' }}
+                        onClick={() => {
+                          const insDefaults = getVisaInsuranceDefaults(formData.visa_type, 1);
+                          setFormData(prev => ({ ...prev, ...insDefaults }));
+                          alert(`[${formData.visa_type || '외국인'}] 비자 기준 4대보험 법정 기본값이 자동 적용되었습니다.\n• 건강보험/산재보험: 당연가입 (체크 ON)\n• 고용보험: ${isForeignOptionalEmployment ? '임의가입 대상 (체크 OFF / 비공제)' : '당연가입 (체크 ON)'}\n• 국민연금: ${isForeignPensionExempt ? '법정 가입 제외 (체크 OFF)' : '상호주의 / 공단고지금액 적용'}`);
+                        }}
+                      >
+                        ⚡ 비자 법정 기준 4대보험 원클릭 자동 재적용
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px', background: 'rgba(15, 23, 42, 0.7)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                      <div style={{ fontSize: '11.5px', color: '#e2e8f0' }}>
+                        <strong style={{ color: '#38bdf8' }}>🏥 건강/장기요양:</strong> 의무 당연적용
+                      </div>
+                      <div style={{ fontSize: '11.5px', color: '#e2e8f0' }}>
+                        <strong style={{ color: '#4ade80' }}>🛡️ 산재보험:</strong> 사업주 100% 부담
+                      </div>
+                      <div style={{ fontSize: '11.5px', color: '#e2e8f0' }}>
+                        <strong style={{ color: '#f59e0b' }}>🏢 고용보험:</strong> {isForeignOptionalEmployment ? '임의가입 (미가입 권장)' : '당연적용 의무'}
+                      </div>
+                      <div style={{ fontSize: '11.5px', color: '#e2e8f0' }}>
+                        <strong style={{ color: '#c084fc' }}>🏛️ 국민연금:</strong> {isForeignPensionExempt ? '법정 가입 제외' : '상호주의 / 고지금액'}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* 1. 4대보험 개별 선택 섹션 */}
                 <div style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)', padding: '16px', borderRadius: 'var(--radius-md)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
                     <h4 style={{ fontSize: '14px', fontWeight: '700', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                       🛡️ 4대보험 가입 및 공제 선택
                     </h4>
-                    {empAge !== null && (
-                      <span className="badge badge-primary" style={{ fontSize: '11.5px', padding: '3px 8px' }}>
-                        현재 나이: <strong>만 {empAge}세</strong>
-                      </span>
-                    )}
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      {isForeignWorker && (
+                        <span className="badge badge-warning" style={{ fontSize: '11px', padding: '3px 8px' }}>
+                          🌐 외국인 ({formData.visa_type || '비자'})
+                        </span>
+                      )}
+                      {empAge !== null && (
+                        <span className="badge badge-primary" style={{ fontSize: '11.5px', padding: '3px 8px' }}>
+                          현재 나이: <strong>만 {empAge}세</strong>
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {/* 국민연금 */}
-                    <div style={{ padding: '10px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', border: isPensionExempt ? '1px solid rgba(245,158,11,0.4)' : '1px solid var(--border-subtle)' }}>
+                    <div style={{ padding: '10px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', border: (isPensionExempt || isForeignPensionExempt) ? '1px solid rgba(245,158,11,0.4)' : '1px solid var(--border-subtle)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                         <label className="form-check" style={{ margin: 0 }}>
                           <input 
@@ -1181,17 +1342,26 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
                               const checked = e.target.checked;
                               if (checked && isPensionExempt) {
                                 alert(`[안내] 이 직원은 현재 만 ${empAge}세로 국민연금 의무가입 대상(만 60세 미만)에서 제외됩니다.\n본인 희망 시 '임의계속가입'으로 가입할 수 있습니다.`);
+                              } else if (checked && isForeignPensionExempt) {
+                                alert(`[안내] 이 직원은 ${formData.visa_type} 비자로 국민연금법상 가입 제외 대상입니다.`);
                               }
                               setFormData({ ...formData, ins_national_pension: checked ? 1 : 0 });
                             }} 
                           />
                           <span style={{ fontWeight: '700', color: '#fff' }}>국민연금 (4.5% 공제)</span>
                         </label>
-                        {isPensionExempt && (
-                          <span className="badge badge-warning" style={{ fontSize: '11px' }}>
-                            ⚠️ 만 60세 이상 (의무가입 제외)
-                          </span>
-                        )}
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                          {isForeignPensionExempt && (
+                            <span className="badge badge-warning" style={{ fontSize: '11px' }}>
+                              ⚠️ {formData.visa_type} 비자 (가입 제외)
+                            </span>
+                          )}
+                          {isPensionExempt && (
+                            <span className="badge badge-warning" style={{ fontSize: '11px' }}>
+                              ⚠️ 만 60세 이상 (의무가입 제외)
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {/* 국민연금 결정세액/결정고지금액 입력란 */}
@@ -1232,6 +1402,11 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
                           💡 만 60세 이상은 국민연금 의무가입 대상에서 제외됩니다. (체크 해제 시 연금보험료 0원 처리)
                         </div>
                       )}
+                      {isForeignPensionExempt && (
+                        <div style={{ fontSize: '11.5px', color: '#fbbf24', marginTop: '6px', paddingLeft: '24px' }}>
+                          💡 {formData.visa_type} 유학비자 외국인은 국민연금법상 가입 제외 대상입니다. (체크 해제 시 국민연금료 0원)
+                        </div>
+                      )}
                     </div>
 
                     {/* 건강보험 & 장기요양보험 */}
@@ -1264,7 +1439,7 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
                     </div>
 
                     {/* 고용보험 */}
-                    <div style={{ padding: '10px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', border: isEmploymentExempt ? '1px solid rgba(245,158,11,0.4)' : '1px solid var(--border-subtle)' }}>
+                    <div style={{ padding: '10px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', border: (isEmploymentExempt || isForeignOptionalEmployment) ? '1px solid rgba(245,158,11,0.4)' : '1px solid var(--border-subtle)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                         <label className="form-check" style={{ margin: 0 }}>
                           <input 
@@ -1274,18 +1449,32 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
                               const checked = e.target.checked;
                               if (checked && isEmploymentExempt) {
                                 alert(`[안내] 이 직원은 현재 만 ${empAge}세로 만 65세 이후 신규 채용된 경우 고용보험(실업급여) 적용제외 대상입니다.`);
+                              } else if (checked && isForeignOptionalEmployment) {
+                                alert(`[안내] ${formData.visa_type} 비자 외국인 근로자는 고용보험 임의가입 대상입니다.\n근로복지공단에 가입 신청/승인된 경우에만 가입을 유지하세요.`);
                               }
                               setFormData({ ...formData, ins_employment: checked ? 1 : 0 });
                             }} 
                           />
                           <span style={{ fontWeight: '700', color: '#fff' }}>고용보험 (0.9% 공제)</span>
                         </label>
-                        {isEmploymentExempt && (
-                          <span className="badge badge-warning" style={{ fontSize: '11px' }}>
-                            ⚠️ 만 65세 이상 (실업급여 적용제외)
-                          </span>
-                        )}
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                          {isForeignOptionalEmployment && (
+                            <span className="badge badge-warning" style={{ fontSize: '11px' }}>
+                              🌐 {formData.visa_type} 임의가입 (비공제 권장)
+                            </span>
+                          )}
+                          {isEmploymentExempt && (
+                            <span className="badge badge-warning" style={{ fontSize: '11px' }}>
+                              ⚠️ 만 65세 이상 (실업급여 적용제외)
+                            </span>
+                          )}
+                        </div>
                       </div>
+                      {isForeignOptionalEmployment && (
+                        <div style={{ fontSize: '11.5px', color: '#38bdf8', marginTop: '6px', paddingLeft: '24px' }}>
+                          💡 {formData.visa_type} 비자 외국인 근로자는 고용보험(실업급여)이 <strong>임의가입(근로자 신청 시 가입)</strong> 대상입니다. 공단에 별도 가입 신청한 경우에만 체크하세요. (체크 해제 시 고용보험료 0원)
+                        </div>
+                      )}
                       {isEmploymentExempt && (
                         <div style={{ fontSize: '11.5px', color: '#fbbf24', marginTop: '6px', paddingLeft: '24px' }}>
                           💡 만 65세 이후 신규 고용된 직원은 실업급여 적용제외 대상입니다. (체크 해제 시 고용보험료 0원 처리)

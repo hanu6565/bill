@@ -233,3 +233,47 @@ test('SIMULATION SUITE 5: Full Store Lifecycle & Payroll Lock Workflow', async (
   const reopenedRun = await db.get('SELECT * FROM payroll_runs WHERE id = ?', [runId]);
   assert.equal(reopenedRun.status, 'REOPENED');
 });
+
+test('SIMULATION SUITE 6: Foreign Worker Visa 4-Major Insurance Rules (E-9, D-2, F-5)', async () => {
+  // 1. E-9 Foreign Worker (VU DUC HUY case): fixed national pension 50,010, health/accident ON, employment OFF (임의가입 미적용)
+  const empE9 = {
+    id: 7, store_id: 1, name: 'VU DUC HUY', is_foreigner: 1, visa_type: 'E-9',
+    wage_type: 'MONTHLY', contract_salary: 1080000, hire_date: '2026-07-01', dependents_count: 0,
+    ins_national_pension: 1, fixed_national_pension: 50010,
+    ins_health: 1, ins_longterm_care: 1, ins_employment: 0, ins_work_accident: 1,
+    deduct_income_tax: 1, deduct_local_tax: 1
+  };
+  const pE9 = calculateEmployeePayroll(empE9, [], '2026-09', DEFAULT_RATES_2026);
+  assert.equal(pE9.nationalPension, 50010);
+  assert.equal(pE9.healthInsurance, 38280); // 1,080,000 * 0.03545 = 38,286 -> 38,280
+  assert.equal(pE9.longtermCare, 4950);     // 38,280 * 0.1295 = 4,957 -> 4,950
+  assert.equal(pE9.employmentInsurance, 0); // E-9 임의가입 (미가입) -> 0원
+  assert.equal(pE9.incomeTax, 1320); // 1,080,000원 간이세액표 1,320원
+  assert.equal(pE9.localIncomeTax, 130); // 1,320원의 10% (10원 절사) = 130원
+
+  // 2. D-2 Student Worker: National Pension OFF, Employment OFF, Health ON, Accident ON
+  const empD2 = {
+    id: 8, store_id: 1, name: 'NGUYEN VAN A', is_foreigner: 1, visa_type: 'D-2',
+    wage_type: 'HOURLY', hourly_wage: 10320, hire_date: '2026-09-01', dependents_count: 1,
+    ins_national_pension: 0, ins_health: 1, ins_longterm_care: 1, ins_employment: 0, ins_work_accident: 1
+  };
+  const attD2 = [
+    { work_date: '2026-09-01', net_work_hours: 4.0, regular_hours: 4.0, overtime_hours: 0, night_hours: 0, holiday_hours: 0, pub_holiday_hours: 0, is_absent: 0, is_unpaid_leave: 0, is_annual_leave: 0 }
+  ];
+  const pD2 = calculateEmployeePayroll(empD2, attD2, '2026-09', DEFAULT_RATES_2026);
+  assert.equal(pD2.nationalPension, 0);
+  assert.equal(pD2.employmentInsurance, 0);
+  assert.ok(pD2.healthInsurance > 0);
+
+  // 3. F-5 Permanent Resident: All 4 major insurances ON (동일 적용)
+  const empF5 = {
+    id: 9, store_id: 1, name: 'ZHAO WEI', is_foreigner: 1, visa_type: 'F-5',
+    wage_type: 'MONTHLY', contract_salary: 2500000, reported_salary: 2500000, hire_date: '2026-01-01', dependents_count: 1,
+    ins_national_pension: 1, ins_health: 1, ins_longterm_care: 1, ins_employment: 1, ins_work_accident: 1
+  };
+  const pF5 = calculateEmployeePayroll(empF5, [], '2026-09', DEFAULT_RATES_2026);
+  assert.equal(pF5.nationalPension, 112500); // 2,500,000 * 0.045
+  assert.equal(pF5.healthInsurance, 88620);  // 2,500,000 * 0.03545 = 88,625 -> 88,620
+  assert.equal(pF5.employmentInsurance, 22500); // 2,500,000 * 0.009
+});
+

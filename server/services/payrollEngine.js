@@ -456,11 +456,6 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
   let publicHolidayAllowance = 0;
   let weeklyHolidayAllowance = 0;
 
-  const isFullTimeStandard = (
-    employee.wage_type === 'MONTHLY' &&
-    employee.contract_salary >= 3000000
-  );
-
   const isForeignFixed = (
     employee.name === 'VU DUC HUY' ||
     employee.name === 'VC DUC HUY' ||
@@ -469,7 +464,13 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
 
   const isMorningShift = !isForeignFixed && (
     employee.fixed_work_hours === '10:00~15:00' ||
-    (employee.contract_salary > 0 && employee.contract_salary < 2500000 && employee.wage_type === 'MONTHLY')
+    (employee.contract_salary > 0 && employee.contract_salary < 2000000 && employee.wage_type === 'MONTHLY')
+  );
+
+  const isFullTimeStandard = (
+    employee.wage_type === 'MONTHLY' &&
+    !isMorningShift &&
+    !isForeignFixed
   );
 
   const isProbationWorker = (
@@ -862,15 +863,6 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
     unreportedDiffDeduction = Math.floor(Math.round(unreportedDiff * withholdingRate) / 10) * 10;
   }
 
-  if (isForeignFixed) {
-    nationalPension = 50010;
-    healthInsurance = 38950;
-    longtermCare = 5110;
-    employmentInsurance = 0;
-    incomeTax = 0;
-    localIncomeTax = 0;
-    unreportedDiffDeduction = 0;
-  }
 
   // 공제합계 (B)
   const totalDeductions = nationalPension + healthInsurance + longtermCare + employmentInsurance + 
