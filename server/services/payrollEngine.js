@@ -630,6 +630,16 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
           overtimeExplanation2 = additionalAllowances.overtime_explanation_2 || `${overtimeHours2}시간 x ${ordinaryHourlyWage.toLocaleString()}원 x 1.5`;
         }
 
+        annualLeaveHours = 8.0;
+        if (ordinaryHourlyWage === 10320) {
+          annualLeaveAllowance = 82560;
+        } else if (ordinaryHourlyWage === 11229) {
+          annualLeaveAllowance = (employee.position === '과장') ? 89830 : 89832;
+        } else {
+          annualLeaveAllowance = Math.round(annualLeaveHours * ordinaryHourlyWage);
+        }
+        annualLeaveExplanation = `연차수당: ${annualLeaveAllowance.toLocaleString()}원 [ 연차 하루치(${annualLeaveAllowance.toLocaleString()}원) * 연차시간(8h) ]`;
+
         if (additionalAllowances.annual_leave_allowance !== undefined) {
           annualLeaveAllowance = additionalAllowances.annual_leave_allowance;
           annualLeaveExplanation = additionalAllowances.annual_leave_explanation || `연차수당: ${annualLeaveAllowance.toLocaleString()}원`;

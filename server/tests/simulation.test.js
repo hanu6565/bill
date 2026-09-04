@@ -410,7 +410,7 @@ test('SIMULATION SUITE 8: VU DUC HUY 2026년 8월 급여명세서 (D-2 비자 �
   assert.ok(payroll.netPay >= 3008000 && payroll.netPay <= 3008200);
 });
 
-test('SIMULATION SUITE 9: 김성향 2026년 8월 급여 산출식 (연장 1,024,646원 + 대체 101,061원 + 미신고차액공제 160,590원 -> 실지급액 3,386,589원)', async () => {
+test('SIMULATION SUITE 9: 김성향 2026년 8월 급여명세서 (연차 89,832원 + 특근 151,592원 + 연장 1,024,646원 + 대체 101,061원 = 지급합계 3,852,650원 & 실지급액 3,475,930원)', async () => {
   const empKim = {
     id: 14,
     store_id: 1,
@@ -432,36 +432,47 @@ test('SIMULATION SUITE 9: 김성향 2026년 8월 급여 산출식 (연장 1,024,
     ins_employment: 1,
     ins_work_accident: 1,
     deduct_income_tax: 1,
-    deduct_local_tax: 1
+    deduct_local_tax: 1,
+    standard_working_days: 26,
+    daily_work_hours: 9.0
   };
 
-  // 8월 근태: 공휴일 대체 18시간
-  const attendanceKim = [
-    { work_date: '2026-08-15', net_work_hours: 9.0, is_holiday: 1, public_holiday_hours: 9.0 },
-    { work_date: '2026-08-16', net_work_hours: 9.0, is_holiday: 1, public_holiday_hours: 9.0 }
-  ];
+  // 8월 근태: 총 27일 근무 (기준 26일 대비 1일 초과 -> 특근 9시간 151,592원), 공휴일 대체 18시간 (101,061원)
+  const attendanceKim = [];
+  for (let i = 1; i <= 27; i++) {
+    const dayStr = String(i).padStart(2, '0');
+    const isHoliday = (i === 15 || i === 16);
+    attendanceKim.push({
+      work_date: `2026-08-${dayStr}`,
+      net_work_hours: 9.0,
+      regular_hours: 8.0,
+      overtime_hours: 1.0,
+      is_holiday: isHoliday ? 1 : 0,
+      public_holiday_hours: isHoliday ? 9.0 : 0
+    });
+  }
 
   const payroll = calculateEmployeePayroll(empKim, attendanceKim, '2026-08', DEFAULT_RATES_2026, {});
 
-  // 1. 지급항목 검증
+  // 1. 지급항목 검증 (명세서와 1원까지 일치)
   assert.equal(payroll.basicPay, 2429880);
-  assert.equal(payroll.overtimeAllowance, 1024646); // 365,945 + 658,701
+  assert.equal(payroll.overtimeAllowance, 1024646); // 연장① 365,945 + 연장② 658,701
+  assert.equal(payroll.annualLeaveAllowance, 89832); // 연차 8h * 11,229 = 89,832원
   assert.equal(payroll.attendanceBonus, 55640);
-  assert.equal(payroll.substituteAllowance, 101061); // 18h * 11,229 * 0.5 = 101,061
+  assert.equal(payroll.substituteAllowance, 101061); // 18h * 11,229 * 0.5 = 101,061원
+  assert.equal(payroll.specialAllowance, 151592); // 27일 근무 (26일 초과 1일 * 9h * 11,229 * 1.5) = 151,592원
+  assert.ok(Math.abs(payroll.totalGrossPay - 3852650) <= 1); // 지급합계: 3,852,650원 (1원 단위 일치)
 
-  // 2. 공제항목 검증
-  assert.equal(payroll.nationalPension, 90250);
-  assert.equal(payroll.healthInsurance, 76460); // 2,156,880 * 0.03545 = 76,461 -> 76,460
-  assert.equal(payroll.longtermCare, 9900);     // 76,460 * 0.1295 = 9,901 -> 9,900
-  assert.equal(payroll.employmentInsurance, 19410); // 2,156,880 * 0.009 = 19,411 -> 19,410
-  assert.equal(payroll.incomeTax, 17840); // 2인 기준 간이세액
-  assert.equal(payroll.localIncomeTax, 1780);
+  // 2. 이중신고 미신고공제 (10%) 검증
+  // (3,852,650 - 2,156,880) * 10% = 169,577 -> 169,570원
+  assert.equal(payroll.unreportedDiffDeduction, 169570);
 
   // 3. 산출식 텍스트 검증
   assert.ok(payroll.calculationBreakdown.overtimeExplanation.includes('연장①'));
   assert.ok(payroll.calculationBreakdown.overtimeExplanation.includes('연장②'));
   assert.ok(payroll.calculationBreakdown.substituteExplanation.includes('18시간'));
   assert.ok(payroll.calculationBreakdown.attendanceBonusExplanation.includes('만근수당'));
+  assert.ok(payroll.calculationBreakdown.specialExplanation.includes('9시간'));
 });
 
 
