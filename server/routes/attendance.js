@@ -93,6 +93,39 @@ export async function calculateDayHours(workDate, clockIn, clockOut, breakMinute
   };
 }
 
+/**
+ * Helper to get employee with on-demand Supabase cloud fallback
+ */
+async function getEmployeeWithFallback(employeeId, storeId) {
+  if (!employeeId) return null;
+  let emp = await db.get('SELECT id, store_id FROM employees WHERE id = ?', [Number(employeeId)]);
+  if (emp) return emp;
+
+  // Supabase cloud fallback
+  try {
+    const { supabaseAdmin } = await import('../db/supabase.js');
+    const { data: sbEmp } = await supabaseAdmin.from('employees').select('*').eq('id', Number(employeeId)).maybeSingle();
+    if (sbEmp) {
+      await db.run(
+        `INSERT OR REPLACE INTO employees (
+          id, store_id, name, hire_date, resign_date, position, wage_type, contract_salary, hourly_wage, fixed_work_hours
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [sbEmp.id, sbEmp.store_id, sbEmp.name, sbEmp.hire_date, sbEmp.resign_date, sbEmp.position, sbEmp.wage_type, sbEmp.contract_salary, sbEmp.hourly_wage, sbEmp.fixed_work_hours]
+      );
+      return sbEmp;
+    }
+  } catch (e) {
+    console.warn('Supabase employee lookup fallback error:', e.message);
+  }
+
+  if (storeId) {
+    const storeEmp = await db.get('SELECT id, store_id FROM employees WHERE store_id = ? AND id = ?', [Number(storeId), Number(employeeId)]);
+    if (storeEmp) return storeEmp;
+  }
+
+  return null;
+}
+
 // GET /api/attendance?employee_id=1&year_month=2026-09
 router.get('/', async (req, res) => {
   try {
@@ -130,9 +163,9 @@ router.post('/save-daily', async (req, res) => {
       return res.status(400).json({ success: false, message: '직원ID와 근무일자는 필수입니다.' });
     }
 
-    const emp = await db.get('SELECT id, store_id FROM employees WHERE id = ?', [Number(employee_id)]);
+    const emp = await getEmployeeWithFallback(employee_id, store_id);
     if (!emp) {
-      return res.status(404).json({ success: false, message: '해당 직원을 찾을 수 없습니다.' });
+      return res.status(404).json({ success: false, message: '해당 직원을 찾을 수 없습니다. 직원 관리에서 직원이 정상 등록되어 있는지 확인해주세요.' });
     }
 
     let targetStoreId = emp.store_id || Number(store_id) || 1;
@@ -210,9 +243,9 @@ router.post('/quick-fill', async (req, res) => {
       return res.status(400).json({ success: false, message: '필수 파라미터가 누락되었습니다.' });
     }
 
-    const emp = await db.get('SELECT id, store_id FROM employees WHERE id = ?', [Number(employee_id)]);
+    const emp = await getEmployeeWithFallback(employee_id, store_id);
     if (!emp) {
-      return res.status(404).json({ success: false, message: '해당 직원을 찾을 수 없습니다.' });
+      return res.status(404).json({ success: false, message: '해당 직원을 찾을 수 없습니다. 직원 관리에서 직원이 정상 등록되어 있는지 확인해주세요.' });
     }
 
     let targetStoreId = emp.store_id || Number(store_id) || 1;

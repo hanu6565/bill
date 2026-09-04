@@ -80,9 +80,7 @@ export async function runSeeds() {
     }
   ];
 
-  await db.run("DELETE FROM employees WHERE name LIKE '%DUC HUY%' OR name LIKE '%VU DUC%' OR id = 7");
-  await db.run("DELETE FROM payroll_details WHERE employee_id NOT IN (1, 2, 3, 4, 5, 6)");
-  await db.run("DELETE FROM attendance WHERE employee_id NOT IN (1, 2, 3, 4, 5, 6)");
+
 
   for (const emp of rawEmployees) {
     const rrnEnc = encryptText(emp.rrn);

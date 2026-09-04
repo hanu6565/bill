@@ -462,6 +462,7 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
   );
 
   const isForeignFixed = (
+    employee.name === 'VU DUC HUY' ||
     employee.name === 'VC DUC HUY' ||
     (employee.is_foreigner === 1 && employee.contract_salary === 1080000)
   );
