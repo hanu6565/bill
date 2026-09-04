@@ -44,6 +44,16 @@ export async function pullFromSupabase() {
     const { data: employees, error: eErr } = await supabaseAdmin.from('employees').select('*');
     if (!eErr && employees && employees.length > 0) {
       for (const e of employees) {
+        let fixedNP = e.fixed_national_pension || 0;
+        if (!fixedNP && e.notes) {
+          try {
+            const parsed = JSON.parse(e.notes);
+            if (parsed && parsed.fixed_national_pension) {
+              fixedNP = parsed.fixed_national_pension;
+            }
+          } catch (err) {}
+        }
+
         await db.run(`
           INSERT OR REPLACE INTO employees (
             id, store_id, name, rrn_encrypted, rrn_masked, phone, position, hire_date, resign_date,
@@ -73,7 +83,7 @@ export async function pullFromSupabase() {
           e.ins_work_accident !== undefined ? e.ins_work_accident : 1,
           e.deduct_income_tax !== undefined ? e.deduct_income_tax : 1,
           e.deduct_local_tax !== undefined ? e.deduct_local_tax : 1,
-          e.fixed_national_pension || 0,
+          fixedNP,
           e.ordinary_wage_items || '["basic_pay"]', e.payslip_display_mode || 'STANDARD'
         ]);
       }
@@ -170,6 +180,21 @@ export async function pushToSupabase(table, data, action = 'upsert') {
         const copy = { ...r };
         delete copy.store_name;
         delete copy.employee_count;
+        if (table === 'employees') {
+          if (copy.fixed_national_pension !== undefined) {
+            let noteObj = {};
+            try { 
+              noteObj = typeof copy.notes === 'string' && copy.notes.startsWith('{') ? JSON.parse(copy.notes) : { memo: copy.notes || '' }; 
+            } catch (e) { 
+              noteObj = { memo: copy.notes || '' }; 
+            }
+            if (copy.fixed_national_pension > 0) {
+              noteObj.fixed_national_pension = copy.fixed_national_pension;
+              copy.notes = JSON.stringify(noteObj);
+            }
+            delete copy.fixed_national_pension;
+          }
+        }
         return copy;
       });
       const { error } = await supabaseAdmin.from(table).upsert(sanitized);

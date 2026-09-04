@@ -30,7 +30,26 @@ export async function syncSqliteToSupabase() {
     const employees = await db.query('SELECT * FROM employees');
     if (employees.length > 0) {
       console.log(`👥 Syncing ${employees.length} employees...`);
-      const { error: empErr } = await supabaseAdmin.from('employees').upsert(employees);
+      const sanitizedEmployees = employees.map(emp => {
+        const copy = { ...emp };
+        delete copy.store_name;
+        delete copy.employee_count;
+        if (copy.fixed_national_pension !== undefined) {
+          let noteObj = {};
+          try { 
+            noteObj = typeof copy.notes === 'string' && copy.notes.startsWith('{') ? JSON.parse(copy.notes) : { memo: copy.notes || '' }; 
+          } catch (e) { 
+            noteObj = { memo: copy.notes || '' }; 
+          }
+          if (copy.fixed_national_pension > 0) {
+            noteObj.fixed_national_pension = copy.fixed_national_pension;
+            copy.notes = JSON.stringify(noteObj);
+          }
+          delete copy.fixed_national_pension;
+        }
+        return copy;
+      });
+      const { error: empErr } = await supabaseAdmin.from('employees').upsert(sanitizedEmployees);
       if (empErr) console.error('Employee sync error:', empErr);
       else console.log('✅ Employees synced.');
     }
