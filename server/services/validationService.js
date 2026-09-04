@@ -7,7 +7,8 @@ import { DEFAULT_RATES_2026 } from './payrollEngine.js';
 export async function validatePayrollRun(payrollRunId, storeId, yearMonth, rates = DEFAULT_RATES_2026) {
   const details = await db.query(
     `SELECT pd.*, e.name as employee_name, e.rrn_masked, e.hire_date, e.employment_type, e.wage_type, 
-            e.contract_salary, e.hourly_wage, e.is_dual_reporting, e.reported_salary, e.dependents_count
+            e.contract_salary, e.hourly_wage, e.is_dual_reporting, e.reported_salary, e.dependents_count,
+            e.ins_health, e.ins_employment, e.ins_national_pension, e.tax_exempt_social_ins, e.is_foreigner, e.visa_type
      FROM payroll_details pd
      JOIN employees e ON pd.employee_id = e.id
      WHERE pd.payroll_run_id = ?`,
@@ -66,19 +67,23 @@ export async function validatePayrollRun(payrollRunId, storeId, yearMonth, rates
       }
     }
 
-    // Rule 3: 4대보험 각 항목 재계산 일치 검증 (상용직)
-    if (item.employment_type === 'REGULAR') {
+    // Rule 3: 4대보험 각 항목 재계산 일치 검증 (상용직 & 유효 지급액 기준)
+    if (item.employment_type === 'REGULAR' && item.total_gross_pay > 0 && item.tax_exempt_social_ins !== 0) {
       const isDual = item.is_dual_reporting === 1;
       const base = isDual && item.reported_salary > 0 ? item.reported_salary : item.taxable_income;
 
-      const expHealth = Math.floor((base * (rates.healthInsurance || 0.03545)) / 10) * 10;
-      if (Math.abs(item.health_insurance - expHealth) > 10) {
-        warnings.push(`건강보험 요율 불일치 (현재: ${item.health_insurance.toLocaleString()}원, 기준: ${expHealth.toLocaleString()}원)`);
+      if (item.ins_health !== 0) {
+        const expHealth = Math.floor(Math.round(base * (rates.healthInsurance || 0.03545)) / 10) * 10;
+        if (Math.abs(item.health_insurance - expHealth) > 10) {
+          warnings.push(`건강보험 요율 불일치 (현재: ${item.health_insurance.toLocaleString()}원, 기준: ${expHealth.toLocaleString()}원)`);
+        }
       }
 
-      const expEmp = Math.floor((base * (rates.employmentInsurance || 0.009)) / 10) * 10;
-      if (Math.abs(item.employment_insurance - expEmp) > 10) {
-        warnings.push(`고용보험 요율 불일치 (현재: ${item.employment_insurance.toLocaleString()}원, 기준: ${expEmp.toLocaleString()}원)`);
+      if (item.ins_employment !== 0) {
+        const expEmp = Math.floor(Math.round(base * (rates.employmentInsurance || 0.009)) / 10) * 10;
+        if (Math.abs(item.employment_insurance - expEmp) > 10) {
+          warnings.push(`고용보험 요율 불일치 (현재: ${item.employment_insurance.toLocaleString()}원, 기준: ${expEmp.toLocaleString()}원)`);
+        }
       }
     }
 
@@ -88,7 +93,11 @@ export async function validatePayrollRun(payrollRunId, storeId, yearMonth, rates
       [item.employee_id, `${yearMonth}-%`]
     );
     if (!attCount || attCount.count === 0) {
-      warnings.push('해당 월 근태 입력 기록이 없습니다 (근태 누락 감지)');
+      if (item.wage_type === 'HOURLY') {
+        warnings.push('시급제 근태 미입력 (근무시간 0시간, 지급액 0원)');
+      } else {
+        warnings.push('해당 월 근태 입력 기록 없음 (월 기본 일정으로 산정)');
+      }
     }
 
     // Rule 5: 직원 필수정보(주민번호, 입사일, 책정급여/시급) 비어있지 않은지 검증

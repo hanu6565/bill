@@ -144,6 +144,20 @@ test('SIMULATION SUITE 4: Hourly Wage Part-Timer Weekly Holiday & Overtime', asy
 
   // Total Gross Pay: 262,500 + 52,500 = 315,000
   assert.equal(payroll.totalGrossPay, 315000);
+
+  // Zero-attendance Hourly worker test (근태 미입력 시급제: 0원)
+  const zeroAttHourly = {
+    id: 11, store_id: 1, name: 'VU DUC HUY', wage_type: 'HOURLY', hourly_wage: 10320,
+    hire_date: '2026-08-01', dependents_count: 0, is_foreigner: 1, visa_type: 'E-9',
+    ins_national_pension: 1, fixed_national_pension: 50010, ins_health: 1, ins_longterm_care: 1, ins_employment: 0, ins_work_accident: 1
+  };
+  const zeroPayroll = calculateEmployeePayroll(zeroAttHourly, [], '2026-08', DEFAULT_RATES_2026);
+  assert.equal(zeroPayroll.basicPay, 0);
+  assert.equal(zeroPayroll.totalGrossPay, 0);
+  assert.equal(zeroPayroll.nationalPension, 0);
+  assert.equal(zeroPayroll.healthInsurance, 0);
+  assert.equal(zeroPayroll.totalDeductions, 0);
+  assert.equal(zeroPayroll.netPay, 0);
 });
 
 test('SIMULATION SUITE 5: Full Store Lifecycle & Payroll Lock Workflow', async () => {
