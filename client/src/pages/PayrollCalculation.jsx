@@ -696,6 +696,24 @@ export default function PayrollCalculation({ stores, currentStoreId, setCurrentS
                     </div>
                   )}
 
+                  {selectedDetail.substitute_allowance > 0 && (
+                    <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
+                      <strong style={{ color: '#34d399' }}>대체근로수당:</strong> {breakdown.substituteExplanation || `${(selectedDetail.substitute_allowance || 0).toLocaleString()}원`}
+                    </div>
+                  )}
+
+                  {selectedDetail.attendance_bonus > 0 && (
+                    <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
+                      <strong style={{ color: '#fbbf24' }}>만근수당:</strong> {breakdown.attendanceBonusExplanation || `${(selectedDetail.attendance_bonus || 0).toLocaleString()}원`}
+                    </div>
+                  )}
+
+                  {selectedDetail.bonus > 0 && (
+                    <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
+                      <strong style={{ color: '#a78bfa' }}>상여금:</strong> {breakdown.bonusExplanation || `${(selectedDetail.bonus || 0).toLocaleString()}원`}
+                    </div>
+                  )}
+
                   {selectedDetail.annual_leave_allowance > 0 && (
                     <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
                       <strong style={{ color: '#fff' }}>연차수당:</strong> {breakdown.annualLeaveExplanation || '-'}

@@ -952,18 +952,24 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
     overtimeExplanation1,
     overtimeHours2,
     overtimeAllowance2,
-    overtimeExplanation2,
-    overtimeExplanation: overtimeExplanation1 || overtimeExplanation2 || '',
+    overtimeExplanation: (overtimeAllowance1 > 0 && overtimeAllowance2 > 0)
+      ? `연장①: ${overtimeExplanation1} (${overtimeAllowance1.toLocaleString()}원) + 연장②: ${overtimeExplanation2} (${overtimeAllowance2.toLocaleString()}원) = ${(overtimeAllowance1 + overtimeAllowance2).toLocaleString()}원`
+      : (overtimeExplanation1 || overtimeExplanation2 || '해당 없음 (0원)'),
     nightExplanation: totalNightHours > 0 ? `야간근로수당 (0.5배): ${totalNightHours}시간 x ${ordinaryHourlyWage.toLocaleString()}원 x 0.5 = ${nightAllowance.toLocaleString()}원` : '해당 없음 (0원)',
     holidayExplanation: '해당 없음 (주말 정규 근무 산정)',
-    pubHolidayExplanation: totalPubHolidayHours > 0 ? `법정공휴일 가산수당 (0.5배): ${totalPubHolidayHours}시간 x ${ordinaryHourlyWage.toLocaleString()}원 x 0.5 = ${publicHolidayAllowance.toLocaleString()}원` : '해당 없음 (0원)',
+    pubHolidayExplanation: publicHolidayAllowance > 0 
+      ? `근로자의 날(5/1) 가산수당 (0.5배): ${totalLaborDayHours}시간 x ${ordinaryHourlyWage.toLocaleString()}원 x 0.5 = ${publicHolidayAllowance.toLocaleString()}원` 
+      : '해당 없음 (0원)',
     annualLeaveHours,
     annualLeaveAllowance,
-    annualLeaveExplanation,
+    annualLeaveExplanation: annualLeaveAllowance > 0 ? (annualLeaveExplanation || `연차수당: ${annualLeaveAllowance.toLocaleString()}원`) : '해당 없음 (0원)',
     attendanceBonus,
+    attendanceBonusExplanation: attendanceBonus > 0 ? `만근수당 (무결근): ${attendanceBonus.toLocaleString()}원` : '해당 없음 (0원)',
     substituteHours,
     substituteAllowance,
-    substituteExplanation,
+    substituteExplanation: substituteAllowance > 0 
+      ? `대체근로수당 (공휴일대체 0.5배): ${substituteHours}시간 x ${ordinaryHourlyWage.toLocaleString()}원 x 0.5 = ${substituteAllowance.toLocaleString()}원` 
+      : '해당 없음 (0원)',
     specialAllowance,
     specialExplanation,
     bonus,

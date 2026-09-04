@@ -410,4 +410,59 @@ test('SIMULATION SUITE 8: VU DUC HUY 2026년 8월 급여명세서 (D-2 비자 �
   assert.ok(payroll.netPay >= 3008000 && payroll.netPay <= 3008200);
 });
 
+test('SIMULATION SUITE 9: 김성향 2026년 8월 급여 산출식 (연장 1,024,646원 + 대체 101,061원 + 미신고차액공제 160,590원 -> 실지급액 3,386,589원)', async () => {
+  const empKim = {
+    id: 14,
+    store_id: 1,
+    name: '김성향',
+    position: '직원',
+    wage_type: 'MONTHLY',
+    contract_salary: 3560697,
+    hourly_wage: 11229,
+    hire_date: '2025-11-01',
+    dependents_count: 2,
+    is_dual_reporting: 1,
+    reported_salary: 2156880,
+    withholding_rate: 10.0,
+    payslip_display_mode: 'SINGLE_DEDUCTION',
+    fixed_national_pension: 90250,
+    ins_national_pension: 1,
+    ins_health: 1,
+    ins_longterm_care: 1,
+    ins_employment: 1,
+    ins_work_accident: 1,
+    deduct_income_tax: 1,
+    deduct_local_tax: 1
+  };
+
+  // 8월 근태: 공휴일 대체 18시간
+  const attendanceKim = [
+    { work_date: '2026-08-15', net_work_hours: 9.0, is_holiday: 1, public_holiday_hours: 9.0 },
+    { work_date: '2026-08-16', net_work_hours: 9.0, is_holiday: 1, public_holiday_hours: 9.0 }
+  ];
+
+  const payroll = calculateEmployeePayroll(empKim, attendanceKim, '2026-08', DEFAULT_RATES_2026, {});
+
+  // 1. 지급항목 검증
+  assert.equal(payroll.basicPay, 2429880);
+  assert.equal(payroll.overtimeAllowance, 1024646); // 365,945 + 658,701
+  assert.equal(payroll.attendanceBonus, 55640);
+  assert.equal(payroll.substituteAllowance, 101061); // 18h * 11,229 * 0.5 = 101,061
+
+  // 2. 공제항목 검증
+  assert.equal(payroll.nationalPension, 90250);
+  assert.equal(payroll.healthInsurance, 76460); // 2,156,880 * 0.03545 = 76,461 -> 76,460
+  assert.equal(payroll.longtermCare, 9900);     // 76,460 * 0.1295 = 9,901 -> 9,900
+  assert.equal(payroll.employmentInsurance, 19410); // 2,156,880 * 0.009 = 19,411 -> 19,410
+  assert.equal(payroll.incomeTax, 17840); // 2인 기준 간이세액
+  assert.equal(payroll.localIncomeTax, 1780);
+
+  // 3. 산출식 텍스트 검증
+  assert.ok(payroll.calculationBreakdown.overtimeExplanation.includes('연장①'));
+  assert.ok(payroll.calculationBreakdown.overtimeExplanation.includes('연장②'));
+  assert.ok(payroll.calculationBreakdown.substituteExplanation.includes('18시간'));
+  assert.ok(payroll.calculationBreakdown.attendanceBonusExplanation.includes('만근수당'));
+});
+
+
 
