@@ -67,7 +67,7 @@ router.post('/', async (req, res) => {
     const {
       store_id, name, rrn, hire_date, resign_date, position, dependents_count,
       is_foreigner, visa_type, employment_type, wage_type, contract_salary, hourly_wage,
-      fixed_work_hours, bank_name, account_number, has_car, notes,
+      fixed_work_hours, standard_working_days, daily_work_hours, bank_name, account_number, has_car, notes,
       is_dual_reporting, reported_salary, withholding_rate, payslip_display_mode,
       contract_duration_type, is_simple_labor, probation_applicable, probation_start_date, probation_end_date, probation_rate,
       non_taxable_meal, non_taxable_car, non_taxable_overtime, tax_exempt_income_tax, tax_exempt_social_ins,
@@ -112,7 +112,7 @@ router.post('/', async (req, res) => {
       `INSERT INTO employees (
         store_id, name, rrn_encrypted, rrn_masked, hire_date, resign_date, position, dependents_count,
         is_foreigner, visa_type, employment_type, wage_type, contract_salary, hourly_wage,
-        fixed_work_hours, bank_name, account_number, has_car, notes,
+        fixed_work_hours, standard_working_days, daily_work_hours, bank_name, account_number, has_car, notes,
         is_dual_reporting, reported_salary, withholding_rate, payslip_display_mode,
         contract_duration_type, is_simple_labor, probation_applicable, probation_start_date, probation_end_date, probation_rate,
         non_taxable_meal, non_taxable_car, non_taxable_overtime, tax_exempt_income_tax, tax_exempt_social_ins,
@@ -122,7 +122,7 @@ router.post('/', async (req, res) => {
       ) VALUES (
         ?, ?, ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?,
         ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?,
@@ -133,7 +133,7 @@ router.post('/', async (req, res) => {
       [
         targetStoreId, name.trim(), rrnEncrypted, rrnMasked, hire_date, resign_date || null, position || '직원', dependents_count || 1,
         is_foreigner ? 1 : 0, visa_type || null, employment_type || 'REGULAR', wage_type || 'MONTHLY', contract_salary || 0, hourly_wage || minWage,
-        fixed_work_hours || '10:00~22:00', bank_name || '', account_number || '', has_car ? 1 : 0, notes || '',
+        fixed_work_hours || '10:00~22:00', standard_working_days ? parseInt(standard_working_days, 10) : 26, daily_work_hours ? parseFloat(daily_work_hours) : 9.0, bank_name || '', account_number || '', has_car ? 1 : 0, notes || '',
         is_dual_reporting ? 1 : 0, reported_salary || 0, withholding_rate || 10.0, payslip_display_mode || 'SPLIT_PAY',
         contract_duration_type || 'ONE_YEAR_OR_MORE', is_simple_labor ? 1 : 0, finalProbationApplicable, probation_start_date || hire_date, probation_end_date || null, probation_rate || 90.0,
         non_taxable_meal ? 1 : 0, non_taxable_car ? 1 : 0, non_taxable_overtime ? 1 : 0, tax_exempt_income_tax ? 1 : 0, tax_exempt_social_ins ? 1 : 0,
@@ -213,7 +213,7 @@ router.put('/:id', async (req, res) => {
     const {
       store_id, name, rrn, hire_date, resign_date, position, dependents_count,
       is_foreigner, visa_type, employment_type, wage_type, contract_salary, hourly_wage,
-      fixed_work_hours, bank_name, account_number, has_car, notes,
+      fixed_work_hours, standard_working_days, daily_work_hours, bank_name, account_number, has_car, notes,
       is_dual_reporting, reported_salary, withholding_rate, payslip_display_mode,
       contract_duration_type, is_simple_labor, probation_applicable, probation_start_date, probation_end_date, probation_rate,
       non_taxable_meal, non_taxable_car, non_taxable_overtime, tax_exempt_income_tax, tax_exempt_social_ins,
@@ -263,6 +263,8 @@ router.put('/:id', async (req, res) => {
     const targetContractSalary = contract_salary !== undefined ? contract_salary : existing.contract_salary;
     const targetHourlyWage = hourly_wage !== undefined ? hourly_wage : existing.hourly_wage;
     const targetFixedWorkHours = fixed_work_hours !== undefined ? fixed_work_hours : existing.fixed_work_hours;
+    const targetStandardWorkDays = standard_working_days !== undefined ? parseInt(standard_working_days, 10) : (existing.standard_working_days || 26);
+    const targetDailyWorkHours = daily_work_hours !== undefined ? parseFloat(daily_work_hours) : (existing.daily_work_hours || 9.0);
     const targetBankName = bank_name !== undefined ? bank_name : existing.bank_name;
     const targetAccountNumber = account_number !== undefined ? account_number : existing.account_number;
     const targetHasCar = has_car !== undefined ? (has_car ? 1 : 0) : existing.has_car;
@@ -284,7 +286,7 @@ router.put('/:id', async (req, res) => {
       `UPDATE employees SET
         store_id = ?, name = ?, rrn_encrypted = ?, rrn_masked = ?, hire_date = ?, resign_date = ?, position = ?, dependents_count = ?,
         is_foreigner = ?, visa_type = ?, employment_type = ?, wage_type = ?, contract_salary = ?, hourly_wage = ?,
-        fixed_work_hours = ?, bank_name = ?, account_number = ?, has_car = ?, notes = ?,
+        fixed_work_hours = ?, standard_working_days = ?, daily_work_hours = ?, bank_name = ?, account_number = ?, has_car = ?, notes = ?,
         is_dual_reporting = ?, reported_salary = ?, withholding_rate = ?, payslip_display_mode = ?,
         contract_duration_type = ?, is_simple_labor = ?, probation_applicable = ?, probation_start_date = ?, probation_end_date = ?, probation_rate = ?,
         non_taxable_meal = ?, non_taxable_car = ?, non_taxable_overtime = ?, tax_exempt_income_tax = ?, tax_exempt_social_ins = ?,
@@ -295,7 +297,7 @@ router.put('/:id', async (req, res) => {
       [
         targetStoreId, targetName, rrnEncrypted, rrnMasked, targetHireDate, targetResignDate || null, targetPosition, targetDependents || 1,
         targetIsForeigner, targetVisaType || null, targetEmploymentType, targetWageType, targetContractSalary || 0, targetHourlyWage || minWage,
-        targetFixedWorkHours, targetBankName, targetAccountNumber, targetHasCar, targetNotes || '',
+        targetFixedWorkHours, targetStandardWorkDays, targetDailyWorkHours, targetBankName, targetAccountNumber, targetHasCar, targetNotes || '',
         targetIsDual, targetReportedSalary || 0, targetWithholdingRate || 10.0, targetDisplayMode || 'SPLIT_PAY',
         contract_duration_type || existing.contract_duration_type || 'ONE_YEAR_OR_MORE', is_simple_labor !== undefined ? (is_simple_labor ? 1 : 0) : existing.is_simple_labor, finalProbationApplicable, probation_start_date || existing.probation_start_date, probation_end_date || existing.probation_end_date, probation_rate || existing.probation_rate,
         non_taxable_meal !== undefined ? (non_taxable_meal ? 1 : 0) : existing.non_taxable_meal, non_taxable_car !== undefined ? (non_taxable_car ? 1 : 0) : existing.non_taxable_car, non_taxable_overtime !== undefined ? (non_taxable_overtime ? 1 : 0) : existing.non_taxable_overtime, tax_exempt_income_tax !== undefined ? (tax_exempt_income_tax ? 1 : 0) : existing.tax_exempt_income_tax, tax_exempt_social_ins !== undefined ? (tax_exempt_social_ins ? 1 : 0) : existing.tax_exempt_social_ins,

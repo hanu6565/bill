@@ -262,6 +262,8 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
       account_number: '',
       has_car: 0,
       notes: '',
+      standard_working_days: 26,
+      daily_work_hours: 9.0,
       is_dual_reporting: 0,
       reported_salary: 0,
       withholding_rate: 10.0,
@@ -308,6 +310,8 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
       contract_salary: emp.contract_salary || 0,
       hourly_wage: emp.hourly_wage || 10320,
       fixed_work_hours: emp.fixed_work_hours || '10:00~22:00',
+      standard_working_days: emp.standard_working_days !== undefined && emp.standard_working_days !== null ? emp.standard_working_days : 26,
+      daily_work_hours: emp.daily_work_hours !== undefined && emp.daily_work_hours !== null ? emp.daily_work_hours : 9.0,
       bank_name: emp.bank_name || '',
       account_number: emp.account_number || '',
       has_car: emp.has_car || 0,
@@ -1127,16 +1131,31 @@ export default function EmployeeManagement({ stores, currentStoreId, setCurrentS
                 </div>
               )}
 
-              <div className="form-group">
-                <label className="form-label">고정근무시간 (근태 캘린더 기본값 자동 채움용)</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  value={formData.fixed_work_hours} 
-                  onChange={(e) => setFormData({ ...formData, fixed_work_hours: e.target.value })} 
-                  placeholder="10:00~22:00" 
-                />
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>* 월급제 직원은 이 시간이 매달 근태 캘린더에 기본으로 자동 배치됩니다.</span>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">고정근무시간 (근태 캘린더 기본값)</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    value={formData.fixed_work_hours} 
+                    onChange={(e) => setFormData({ ...formData, fixed_work_hours: e.target.value })} 
+                    placeholder="10:00~22:00" 
+                  />
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>* 근태 캘린더에 기본 자동 배치되는 시간대</span>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">월 기준 근무일수 (특근수당 기준)</label>
+                  <input 
+                    type="number" 
+                    min="1"
+                    max="31"
+                    className="form-input" 
+                    value={formData.standard_working_days} 
+                    onChange={(e) => setFormData({ ...formData, standard_working_days: parseInt(e.target.value, 10) || 26 })} 
+                    placeholder="26" 
+                  />
+                  <span style={{ fontSize: '11px', color: '#60a5fa' }}>* 기본 26일 (초과 출근 시 일수 × 9h × 시급 × 1.5배 특근수당 자동 산출)</span>
+                </div>
               </div>
 
               {/* Probation Legality Rule Box */}

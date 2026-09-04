@@ -571,6 +571,12 @@ export default function PayrollCalculation({ stores, currentStoreId, setCurrentS
                         <span>{(selectedDetail.overtime_allowance || 0).toLocaleString()}원</span>
                       </div>
                     )}
+                    {selectedDetail.special_allowance > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#60a5fa' }}>
+                        <span style={{ fontWeight: '600' }}>특근수당 (초과근무)</span>
+                        <span style={{ fontWeight: '700' }}>{(selectedDetail.special_allowance || 0).toLocaleString()}원</span>
+                      </div>
+                    )}
                     {selectedDetail.night_allowance > 0 && (
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span style={{ color: 'var(--text-muted)' }}>야간근로수당</span>
@@ -665,6 +671,12 @@ export default function PayrollCalculation({ stores, currentStoreId, setCurrentS
                   <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
                     <strong style={{ color: '#fff' }}>연장근로수당:</strong> {breakdown.overtimeExplanation || (breakdown.overtimeExplanation1 ? `${breakdown.overtimeExplanation1} + ${breakdown.overtimeExplanation2 || ''}` : '-')}
                   </div>
+
+                  {selectedDetail.special_allowance > 0 && (
+                    <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
+                      <strong style={{ color: '#60a5fa' }}>특근수당:</strong> {breakdown.specialExplanation || `${(selectedDetail.special_allowance || 0).toLocaleString()}원`}
+                    </div>
+                  )}
 
                   <div style={{ padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
                     <strong style={{ color: '#fff' }}>야간근로수당:</strong> {breakdown.nightExplanation || '-'}

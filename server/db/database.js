@@ -341,6 +341,8 @@ export async function initDatabase() {
     if (!eNames.includes('deduct_income_tax')) await exec("ALTER TABLE employees ADD COLUMN deduct_income_tax INTEGER DEFAULT 1;");
     if (!eNames.includes('deduct_local_tax')) await exec("ALTER TABLE employees ADD COLUMN deduct_local_tax INTEGER DEFAULT 1;");
     if (!eNames.includes('fixed_national_pension')) await exec("ALTER TABLE employees ADD COLUMN fixed_national_pension INTEGER DEFAULT 0;");
+    if (!eNames.includes('standard_working_days')) await exec("ALTER TABLE employees ADD COLUMN standard_working_days INTEGER DEFAULT 26;");
+    if (!eNames.includes('daily_work_hours')) await exec("ALTER TABLE employees ADD COLUMN daily_work_hours REAL DEFAULT 9.0;");
     if (!eNames.includes('ordinary_wage_items')) await exec("ALTER TABLE employees ADD COLUMN ordinary_wage_items TEXT;");
     if (!eNames.includes('payslip_display_mode')) await exec("ALTER TABLE employees ADD COLUMN payslip_display_mode TEXT DEFAULT 'STANDARD';");
 

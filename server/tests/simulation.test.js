@@ -291,3 +291,123 @@ test('SIMULATION SUITE 6: Foreign Worker Visa 4-Major Insurance Rules (E-9, D-2,
   assert.equal(pF5.employmentInsurance, 22500); // 2,500,000 * 0.009
 });
 
+test('SIMULATION SUITE 7: 정용주 2026년 8월 수습사원 급여명세서 (월 26일 초과 27일 근무 -> 9h 특근수당 125,388원 & 총지급액 3,178,966원)', async () => {
+  const empJung = {
+    id: 12,
+    store_id: 1,
+    name: '정용주',
+    position: '수습 사원',
+    wage_type: 'MONTHLY',
+    contract_salary: 0,
+    probation_applicable: 1,
+    hire_date: '2026-07-02',
+    dependents_count: 1,
+    is_dual_reporting: 0,
+    standard_working_days: 26,
+    daily_work_hours: 9.0,
+    fixed_national_pension: 147250,
+    ins_national_pension: 1,
+    ins_health: 1,
+    ins_longterm_care: 1,
+    ins_employment: 1,
+    ins_work_accident: 1,
+    deduct_income_tax: 0,
+    deduct_local_tax: 0
+  };
+
+  // 8월 총 27일 근무 (기준 26일 대비 1일 초과 -> 특근 9시간 * 9,288 * 1.5 = 125,388원)
+  // 공휴일 대체 18시간 (83,592원)
+  const attendanceJung = [];
+  for (let i = 1; i <= 27; i++) {
+    const dayStr = String(i).padStart(2, '0');
+    const isHoliday = (i === 15 || i === 16);
+    attendanceJung.push({
+      work_date: `2026-08-${dayStr}`,
+      net_work_hours: 9.0,
+      regular_hours: 8.0,
+      overtime_hours: 1.0,
+      night_hours: 0,
+      is_holiday: isHoliday ? 1 : 0,
+      public_holiday_hours: isHoliday ? 9.0 : 0
+    });
+  }
+
+  const rates = {
+    ...DEFAULT_RATES_2026,
+    healthInsurance: 0.03545
+  };
+
+  const payroll = calculateEmployeePayroll(empJung, attendanceJung, '2026-08', rates, {
+    // 4대보험 고지 기준 세팅
+  });
+
+  // 1. 기본급: 209h * 9,288 = 1,941,192원
+  assert.equal(payroll.basicPay, 1941192);
+
+  // 2. 특근수당: 27일 근무 (26일 초과 1일 * 9h * 9,288 * 1.5) = 125,388원
+  assert.equal(payroll.specialAllowance, 125388);
+
+  // 3. 연장근로수당 ① (22h * 9,288 * 1.5) & ② (39.11h * 9,288 * 1.5)
+  assert.equal(payroll.overtimeAllowance1, 302680);
+  assert.equal(payroll.overtimeAllowance2, 544840);
+
+  // 4. 연차수당 (74,300원) & 만근수당 (106,974원)
+  assert.equal(payroll.annualLeaveAllowance, 74300);
+  assert.equal(payroll.attendanceBonus, 106974);
+
+  // 5. 대체근로수당 (18h * 9,288 * 0.5 = 83,592원)
+  assert.equal(payroll.substituteAllowance, 83592);
+
+  // 6. 지급합계: 3,178,966원
+  assert.equal(payroll.totalGrossPay, 3178966);
+});
+
+test('SIMULATION SUITE 8: VU DUC HUY 2026년 8월 급여명세서 (D-2 비자 한도 신고급여 1,098,730원 기준 4대보험 44,060원 공제 -> 실지급액 3,008,080원)', async () => {
+  const empHuy = {
+    id: 13,
+    store_id: 1,
+    name: 'VU DUC HUY',
+    position: '사원',
+    wage_type: 'MONTHLY',
+    contract_salary: 3052140,
+    hire_date: '2026-01-20',
+    is_foreigner: 1,
+    visa_type: 'D-2',
+    is_dual_reporting: 1,
+    reported_salary: 1098730,
+    withholding_rate: 0, // 세무신고분 외 차액 공제 없음
+    ins_national_pension: 0, // D-2 국민연금 면제
+    ins_health: 1,           // D-2 건강보험 가입
+    ins_longterm_care: 1,    // D-2 장기요양 가입
+    ins_employment: 0,       // D-2 고용보험 면제
+    ins_work_accident: 1,    // 산재보험 사업주 전액부담
+    deduct_income_tax: 0,    // 109.8만원 면세점 근처 소득세 0원
+    deduct_local_tax: 0
+  };
+
+  const payroll = calculateEmployeePayroll(empHuy, [], '2026-08', DEFAULT_RATES_2026, {
+    overtime_allowance_1: 797220,
+    overtime_allowance_2: 0,
+    substitute_allowance: 98040,
+    annual_leave_allowance: 0,
+    attendance_bonus: 0,
+    special_allowance: 0
+  });
+
+  // 1. 지급합계: 기본급 2,156,880 + 연장 797,220 + 대체 98,040 = 3,052,140원
+  assert.equal(payroll.totalGrossPay, 3052140);
+
+  // 2. 건강보험: 신고기준(1,098,730원) * 0.03545 = 38,950원
+  assert.equal(payroll.healthInsurance, 38950);
+
+  // 3. 장기요양보험: 38,950 * 0.1295 = 5,044 -> 5,040 ~ 5,110원
+  assert.ok(payroll.longtermCare >= 5040 && payroll.longtermCare <= 5110);
+
+  // 4. 총 공제액: 건강 + 요양 = 43,990 ~ 44,060원
+  assert.ok(payroll.totalDeductions >= 43990 && payroll.totalDeductions <= 44100);
+
+  // 5. 실지급액: 약 3,008,080원
+  assert.ok(payroll.netPay >= 3008000 && payroll.netPay <= 3008200);
+});
+
+
