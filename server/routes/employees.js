@@ -11,9 +11,6 @@ router.use(authenticateToken);
 // GET /api/employees?store_id=1
 router.get('/', async (req, res) => {
   try {
-    await db.run("DELETE FROM employees WHERE name LIKE '%DUC%' OR name LIKE '%HUY%' OR id = 7");
-    await db.run("DELETE FROM payroll_details WHERE employee_id NOT IN (SELECT id FROM employees)");
-
     const { store_id } = req.query;
     let sql = `
       SELECT e.*, s.name as store_name

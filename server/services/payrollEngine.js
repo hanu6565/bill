@@ -786,7 +786,7 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
         nationalPension = employee.fixed_national_pension;
       } else {
         const npBase = Math.min(Math.max(reportedBase, rates.nationalPensionMin || 390000), rates.nationalPensionMax || 6170000);
-        nationalPension = Math.floor((npBase * (rates.nationalPension || 0.045)) / 10) * 10;
+        nationalPension = Math.floor(Math.round(npBase * (rates.nationalPension || 0.045)) / 10) * 10;
       }
     } else {
       nationalPension = 0;
@@ -794,14 +794,14 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
 
     // 2) 건강보험: 지급합계(과세소득 / reportedBase) 기준 3.545%
     if (employee.tax_exempt_social_ins !== 0 && employee.ins_health !== 0) {
-      healthInsurance = Math.floor((reportedBase * (rates.healthInsurance || 0.03545)) / 10) * 10;
+      healthInsurance = Math.floor(Math.round(reportedBase * (rates.healthInsurance || 0.03545)) / 10) * 10;
     } else {
       healthInsurance = 0;
     }
 
     // 3) 장기요양보험: 건강보험료의 12.95%
     if (employee.tax_exempt_social_ins !== 0 && employee.ins_health !== 0 && employee.ins_longterm_care !== 0) {
-      longtermCare = Math.floor((healthInsurance * (rates.longtermCareRateOfHealth || 0.1295)) / 10) * 10;
+      longtermCare = Math.floor(Math.round(healthInsurance * (rates.longtermCareRateOfHealth || 0.1295)) / 10) * 10;
     } else {
       longtermCare = 0;
     }
@@ -809,7 +809,7 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
     // 4) 고용보험: 지급합계(과세소득 / reportedBase) 기준 0.9% (만 65세 이상 실업급여 제외)
     if (employee.tax_exempt_social_ins !== 0 && employee.ins_employment !== 0) {
       if (!isEmploymentInsuranceExemptByAge) {
-        employmentInsurance = Math.floor((reportedBase * (rates.employmentInsurance || 0.009)) / 10) * 10;
+        employmentInsurance = Math.floor(Math.round(reportedBase * (rates.employmentInsurance || 0.009)) / 10) * 10;
       } else {
         employmentInsurance = 0;
       }
@@ -821,7 +821,7 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
     if (employee.tax_exempt_income_tax !== 0 && employee.deduct_income_tax !== 0) {
       incomeTax = calculateIncomeTax(reportedBase, employee.dependents_count || 1);
       if (employee.deduct_local_tax !== 0) {
-        localIncomeTax = Math.floor((incomeTax * 0.10) / 10) * 10;
+        localIncomeTax = Math.floor(Math.round(incomeTax * 0.10) / 10) * 10;
       } else {
         localIncomeTax = 0;
       }
@@ -858,7 +858,7 @@ export function calculateEmployeePayroll(employee, attendanceRecords, yearMonth,
     let calcReportedBase = (employee.reported_salary > 0) ? employee.reported_salary : 2156880;
     const unreportedDiff = Math.max(0, totalGrossPay - calcReportedBase);
     const withholdingRate = (employee.withholding_rate > 0 ? employee.withholding_rate : 10.0) / 100.0;
-    unreportedDiffDeduction = Math.floor((unreportedDiff * withholdingRate) / 10) * 10;
+    unreportedDiffDeduction = Math.floor(Math.round(unreportedDiff * withholdingRate) / 10) * 10;
   }
 
   if (isForeignFixed) {

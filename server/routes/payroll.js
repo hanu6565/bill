@@ -31,10 +31,6 @@ router.post('/calculate', async (req, res) => {
       });
     }
 
-    // Fetch store and active employees (excluding any legacy foreign worker test records)
-    await db.run("DELETE FROM employees WHERE name LIKE '%DUC%' OR name LIKE '%HUY%' OR id = 7");
-    await db.run("DELETE FROM payroll_details WHERE employee_id NOT IN (SELECT id FROM employees)");
-    
     const store = await db.get('SELECT * FROM stores WHERE id = ?', [store_id]);
     if (!store) return res.status(404).json({ success: false, message: '매장을 찾을 수 없습니다.' });
 
@@ -183,9 +179,6 @@ router.get('/run', async (req, res) => {
     if (!store_id || !year_month) {
       return res.status(400).json({ success: false, message: '매장ID와 귀속연월이 필요합니다.' });
     }
-
-    await db.run("DELETE FROM employees WHERE name LIKE '%DUC%' OR name LIKE '%HUY%' OR id = 7");
-    await db.run("DELETE FROM payroll_details WHERE employee_id NOT IN (SELECT id FROM employees)");
 
     let run = await db.get(
       'SELECT * FROM payroll_runs WHERE store_id = ? AND year_month = ?',
@@ -355,9 +348,6 @@ router.get('/run', async (req, res) => {
       await validatePayrollRun(run.id, store_id, year_month, DEFAULT_RATES_2026);
       run = await db.get('SELECT * FROM payroll_runs WHERE id = ?', [run.id]);
     }
-
-    await db.run("DELETE FROM payroll_details WHERE employee_id IN (SELECT id FROM employees WHERE name LIKE '%DUC%' OR name LIKE '%HUY%') OR employee_id = 7");
-    await db.run("DELETE FROM employees WHERE name LIKE '%DUC%' OR name LIKE '%HUY%' OR id = 7");
 
     const details = await db.query(
       `SELECT pd.*, e.name as employee_name, e.rrn_masked, e.position, e.hire_date, 

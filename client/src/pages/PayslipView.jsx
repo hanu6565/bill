@@ -4,7 +4,7 @@ import api from '../services/api';
 
 export default function PayslipView({ stores, currentStoreId }) {
   const [selectedStoreId, setSelectedStoreId] = useState(currentStoreId || (stores[0] ? stores[0].id : 1));
-  const [yearMonth, setYearMonth] = useState('2026-07');
+  const [yearMonth, setYearMonth] = useState('2026-09');
   const [details, setDetails] = useState([]);
   const [selectedDetailId, setSelectedDetailId] = useState(null);
   const [loading, setLoading] = useState(false);

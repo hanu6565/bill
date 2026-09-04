@@ -13,7 +13,7 @@
     "client": "npm --prefix client run dev",
     "postinstall": "npm --prefix client install",
     "build": "npm --prefix client install && npm --prefix client run build",
-    "test": "node --test server/tests/payrollEngine.test.js",
+    "test": "node --test server/tests/payrollEngine.test.js server/tests/simulation.test.js",
     "seed": "node server/db/seeds.js",
     "supabase:sync": "node server/db/syncToSupabase.js"
   },

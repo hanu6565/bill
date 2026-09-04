@@ -245,6 +245,8 @@ router.post('/quick-fill', async (req, res) => {
       let breakMinutes = default_break_minutes || 60;
       let isAbsent = 0;
       let isUnpaidLeave = 0;
+      let isAnnualLeave = 0;
+      let isHalfAnnualLeave = 0;
 
       if (offDatesSet.has(dateStr)) {
         clockIn = null;
@@ -257,17 +259,19 @@ router.post('/quick-fill', async (req, res) => {
         breakMinutes = cs.break_minutes || 60;
         isAbsent = cs.is_absent ? 1 : 0;
         isUnpaidLeave = cs.is_unpaid_leave ? 1 : 0;
+        isAnnualLeave = cs.is_annual_leave ? 1 : 0;
+        isHalfAnnualLeave = cs.is_half_annual_leave ? 1 : 0;
       }
 
-      const hours = await calculateDayHours(dateStr, clockIn, clockOut, breakMinutes, isAbsent, isUnpaidLeave, 0);
+      const hours = await calculateDayHours(dateStr, clockIn, clockOut, breakMinutes, isAbsent, isUnpaidLeave, isAnnualLeave, isHalfAnnualLeave);
 
       await db.run(
         `INSERT INTO attendance (
           employee_id, store_id, work_date, clock_in, clock_out, break_minutes,
           net_work_hours, day_type, regular_hours, overtime_hours, night_hours,
           holiday_hours_under8, holiday_hours_over8, public_holiday_hours_under8, public_holiday_hours_over8,
-          is_absent, is_unpaid_leave, is_annual_leave, memo
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          is_absent, is_unpaid_leave, is_annual_leave, is_half_annual_leave, memo
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(employee_id, work_date) DO UPDATE SET
           store_id = excluded.store_id,
           clock_in = excluded.clock_in,
@@ -285,12 +289,13 @@ router.post('/quick-fill', async (req, res) => {
           is_absent = excluded.is_absent,
           is_unpaid_leave = excluded.is_unpaid_leave,
           is_annual_leave = excluded.is_annual_leave,
+          is_half_annual_leave = excluded.is_half_annual_leave,
           memo = excluded.memo`,
         [
           emp.id, targetStoreId, dateStr, clockIn || null, clockOut || null, breakMinutes,
           hours.net_work_hours, hours.day_type, hours.regular_hours, hours.overtime_hours, hours.night_hours,
           hours.holiday_hours_under8, hours.holiday_hours_over8, hours.public_holiday_hours_under8, hours.public_holiday_hours_over8,
-          isAbsent, isUnpaidLeave, 0, ''
+          isAbsent, isUnpaidLeave, isAnnualLeave, isHalfAnnualLeave, ''
         ]
       );
     }
@@ -336,21 +341,22 @@ router.post('/upload-excel', upload.single('file'), async (req, res) => {
       const isAbsent = (row['결근'] === 'Y' || row['is_absent'] === 1) ? 1 : 0;
       const isUnpaid = (row['무급휴가'] === 'Y' || row['is_unpaid_leave'] === 1) ? 1 : 0;
       const isAnnual = (row['연차'] === 'Y' || row['is_annual_leave'] === 1) ? 1 : 0;
+      const isHalfAnnual = (row['반차'] === 'Y' || row['is_half_annual_leave'] === 1) ? 1 : 0;
 
       if (!empName || !workDate) continue;
 
       const emp = await db.get('SELECT id FROM employees WHERE store_id = ? AND name = ?', [store_id, empName.trim()]);
       if (!emp) continue;
 
-      const hours = await calculateDayHours(workDate, clockIn, clockOut, breakMin, isAbsent, isUnpaid, isAnnual);
+      const hours = await calculateDayHours(workDate, clockIn, clockOut, breakMin, isAbsent, isUnpaid, isAnnual, isHalfAnnual);
 
       await db.run(
         `INSERT INTO attendance (
           employee_id, store_id, work_date, clock_in, clock_out, break_minutes,
           net_work_hours, day_type, regular_hours, overtime_hours, night_hours,
           holiday_hours_under8, holiday_hours_over8, public_holiday_hours_under8, public_holiday_hours_over8,
-          is_absent, is_unpaid_leave, is_annual_leave, memo
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          is_absent, is_unpaid_leave, is_annual_leave, is_half_annual_leave, memo
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(employee_id, work_date) DO UPDATE SET
           clock_in = excluded.clock_in,
           clock_out = excluded.clock_out,
@@ -366,12 +372,13 @@ router.post('/upload-excel', upload.single('file'), async (req, res) => {
           public_holiday_hours_over8 = excluded.public_holiday_hours_over8,
           is_absent = excluded.is_absent,
           is_unpaid_leave = excluded.is_unpaid_leave,
-          is_annual_leave = excluded.is_annual_leave`,
+          is_annual_leave = excluded.is_annual_leave,
+          is_half_annual_leave = excluded.is_half_annual_leave`,
         [
           emp.id, store_id, workDate, clockIn || null, clockOut || null, breakMin,
           hours.net_work_hours, hours.day_type, hours.regular_hours, hours.overtime_hours, hours.night_hours,
           hours.holiday_hours_under8, hours.holiday_hours_over8, hours.public_holiday_hours_under8, hours.public_holiday_hours_over8,
-          isAbsent, isUnpaid, isAnnual, '엑셀 일괄 업로드'
+          isAbsent, isUnpaid, isAnnual, isHalfAnnual, '엑셀 일괄 업로드'
         ]
       );
       insertedCount++;

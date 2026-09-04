@@ -24,9 +24,6 @@ export async function generateWageLedgerExcel(storesList, yearMonth) {
 
     let details = [];
     if (run) {
-      await db.run("DELETE FROM payroll_details WHERE employee_id IN (SELECT id FROM employees WHERE name LIKE '%DUC%' OR name LIKE '%HUY%') OR employee_id = 7");
-      await db.run("DELETE FROM employees WHERE name LIKE '%DUC%' OR name LIKE '%HUY%' OR id = 7");
-      
       details = await db.query(
         `SELECT pd.*, e.name as employee_name, e.rrn_masked, e.hire_date, e.resign_date, e.dependents_count, 
                 e.position, e.bank_name, e.account_number, e.is_dual_reporting, e.reported_salary, e.payslip_display_mode
@@ -65,7 +62,7 @@ export async function generateWageLedgerExcel(storesList, yearMonth) {
     worksheet.mergeCells('P3:U3'); // 공제내역
     worksheet.getCell('P3').value = '공제내역';
 
-    worksheet.mergeCells('V3:V4'); // 차인지급액
+    worksheet.mergeCells('V3:V5'); // 차인지급액
     worksheet.getCell('V3').value = '차인지급액';
 
     // Style Group Header Row 3
@@ -96,7 +93,7 @@ export async function generateWageLedgerExcel(storesList, yearMonth) {
     worksheet.getRow(5).height = 20;
 
     // Merge vertical sub-headers (Row 4 & 5)
-    ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'L', 'M', 'N', 'O', 'U', 'V'].forEach(col => {
+    ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'L', 'M', 'N', 'O', 'U'].forEach(col => {
       worksheet.mergeCells(`${col}4:${col}5`);
     });
 

@@ -4,7 +4,7 @@ import api from '../services/api';
 
 export default function WageLedgerView({ stores, currentStoreId }) {
   const [selectedStoreId, setSelectedStoreId] = useState(currentStoreId || (stores[0] ? stores[0].id : 'ALL'));
-  const [yearMonth, setYearMonth] = useState('2026-07');
+  const [yearMonth, setYearMonth] = useState('2026-09');
   const [ledgerData, setLedgerData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showFullRRN, setShowFullRRN] = useState(false);
